@@ -89,7 +89,7 @@ function navigate() {
     if (selected) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
   });
   $('page-title').textContent = pageInfo[page];
-  document.title = window.rainbot ? 'RainBot' : `RainBot — ${pageInfo[page]}`;
+  document.title = window.hujan ? 'Hujan' : `Hujan — ${pageInfo[page]}`;
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', navigate);
@@ -131,12 +131,12 @@ function applyTheme(theme) {
   $('theme-toggle').setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`);
 }
 let savedTheme;
-try { savedTheme = localStorage.getItem('rainbot-theme'); } catch { /* Browser storage may be disabled. */ }
+try { savedTheme = localStorage.getItem('hujan-theme'); } catch { /* Browser storage may be disabled. */ }
 applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
 $('theme-toggle').addEventListener('click', () => {
   const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(theme);
-  try { localStorage.setItem('rainbot-theme', theme); } catch { /* Theme still applies for this visit. */ }
+  try { localStorage.setItem('hujan-theme', theme); } catch { /* Theme still applies for this visit. */ }
 });
 const phaseLabels = { ready: 'Available', starting: 'Starting', unavailable: 'Unavailable', restarting: 'Reconnecting', offline: 'Offline' };
 function badge(id, text, tone = '') { $(id).textContent = text; $(id).className = `badge ${tone}`; }
@@ -175,7 +175,7 @@ async function refreshStatus(manual = false) {
   refreshing = true;
   $('refresh').disabled = true;
   try {
-    const response = await window.rainbotRequest('/api/status', { signal: AbortSignal.timeout(6000), cache: 'no-store' });
+    const response = await window.hujanRequest('/api/status', { signal: AbortSignal.timeout(6000), cache: 'no-store' });
     if (!response.ok) throw new Error('Unable to read local status');
     renderStatus(await response.json());
     if (manual) toast('Status refreshed.');
@@ -235,7 +235,7 @@ const fieldLabels = { DISCORD_BOT_TOKEN:'Bot token',DISCORD_APPLICATION_ID:'Appl
   VOICE_SUMMARY_MONTHLY_MINUTES:'Monthly transcription allowance',VOICE_SUMMARY_LANGUAGE:'Summary language' };
 function friendly(message) { return String(message).replace(/[A-Z][A-Z_]+/g, key => fieldLabels[key] || key); }
 async function adminRequest(path, method = 'GET', body) {
-  const response = await window.rainbotRequest(path, { method, cache:'no-store', signal:AbortSignal.timeout(path.endsWith('ai-response') ? 55000 : 40000),
+  const response = await window.hujanRequest(path, { method, cache:'no-store', signal:AbortSignal.timeout(path.endsWith('ai-response') ? 55000 : 40000),
     headers:{ ...(body !== undefined ? {'Content-Type':'application/json'} : {}), ...(csrf ? {'X-CSRF-Token':csrf} : {}) },
     ...(body !== undefined ? {body:JSON.stringify(body)} : {}) });
   const value = await response.json();
@@ -546,7 +546,7 @@ setInterval(() => { if (!document.hidden && csrf) { void refreshManagement(); vo
 document.addEventListener('visibilitychange', () => { if (!document.hidden && csrf) { void refreshVoiceSummary(); void refreshLocalSpeech(); } });
 
 function updateDesktopActions() {
-  if(!window.rainbot)return;
+  if(!window.hujan)return;
   const api=$('ai-provider').value === 'openai';
   for(const id of ['connect-chatgpt','switch-chatgpt','disconnect-chatgpt','desktop-auth-status','chatgpt-account-help'])$(id).hidden=api;
   $('connect-chatgpt').textContent=chatgptConnected ? 'Reconnect ChatGPT' : 'Connect ChatGPT';
@@ -558,9 +558,9 @@ function updateDesktopActions() {
   $('import-installation').disabled ||= !stopped || !settingsData || settingsData.revision !== 'legacy';
 }
 async function refreshDesktopAuth() {
-  if(!window.rainbot)return;
+  if(!window.hujan)return;
   try {
-    chatgptConnected=(await window.rainbot.authStatus()).connected;
+    chatgptConnected=(await window.hujan.authStatus()).connected;
     $('desktop-auth-status').textContent=chatgptConnected ? 'ChatGPT connected' : 'ChatGPT not connected';
   } catch {$('desktop-auth-status').textContent='Connection unavailable';}
   updateDesktopActions();
@@ -574,14 +574,14 @@ async function desktopAction(work, login = false, switching = false) {
   catch(error) {feedback.textContent=error.message;}
   finally {setupBusy=false;form.inert=false;$('cancel-chatgpt').hidden=true;await loadSettings();await refreshManagement(true);await refreshDesktopAuth();}
 }
-if(window.rainbot) {
-  document.title='RainBot';$('desktop-setup').hidden=false;
+if(window.hujan) {
+  document.title='Hujan';$('desktop-setup').hidden=false;
   document.querySelector('#chatgpt-settings .field-help').textContent='Stop the bot, then connect, reconnect, or choose a different ChatGPT account above. Account eligibility is required.';
-  $('register-commands').addEventListener('click',()=>void desktopAction(()=>window.rainbot.registerCommands()));
-  $('connect-chatgpt').addEventListener('click',()=>void desktopAction(()=>window.rainbot.authConnect(),true));
-  $('switch-chatgpt').addEventListener('click',()=>void desktopAction(()=>window.rainbot.authSwitch(),true,true));
-  $('disconnect-chatgpt').addEventListener('click',()=>void desktopAction(()=>window.rainbot.authDisconnect()));
-  $('cancel-chatgpt').addEventListener('click',()=>void window.rainbot.authCancel().catch(error=>toast(error.message)));
+  $('register-commands').addEventListener('click',()=>void desktopAction(()=>window.hujan.registerCommands()));
+  $('connect-chatgpt').addEventListener('click',()=>void desktopAction(()=>window.hujan.authConnect(),true));
+  $('switch-chatgpt').addEventListener('click',()=>void desktopAction(()=>window.hujan.authSwitch(),true,true));
+  $('disconnect-chatgpt').addEventListener('click',()=>void desktopAction(()=>window.hujan.authDisconnect()));
+  $('cancel-chatgpt').addEventListener('click',()=>void window.hujan.authCancel().catch(error=>toast(error.message)));
   const review=document.createElement('dialog');review.className='connect-dialog';
   review.setAttribute('aria-labelledby','import-title');
   review.innerHTML='<h2 id="import-title">Import installation</h2><p class="import-summary"></p><div class="settings-actions"><button type="button" class="button secondary" data-import-cancel>Cancel</button><button type="button" class="button primary" data-import-confirm>Import</button></div>';
@@ -590,10 +590,10 @@ if(window.rainbot) {
   review.querySelector('[data-import-cancel]').addEventListener('click',()=>{ticket=undefined;review.close();});
   review.querySelector('[data-import-confirm]').addEventListener('click',()=>{
     const selected=ticket;ticket=undefined;review.close();
-    if(selected)void desktopAction(()=>window.rainbot.importCommit(selected));
+    if(selected)void desktopAction(()=>window.hujan.importCommit(selected));
   });
   $('import-installation').addEventListener('click',()=>void desktopAction(async()=>{
-    const preview=await window.rainbot.importSelect();
+    const preview=await window.hujan.importSelect();
     if(preview.cancelled)return {message:'Import cancelled.'};
     ticket=preview.ticket;
     review.querySelector('.import-summary').textContent=`${preview.message} ${preview.files} files and ${preview.databases} databases will be imported.`;

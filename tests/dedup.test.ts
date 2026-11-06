@@ -7,7 +7,7 @@ import { Conversations } from '../src/storage.js';
 import { runtimeLock } from '../src/vault.js';
 
 test('duplicate Discord deliveries are claimed once across independent database connections and restarts', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'jarvis-dedup-'));
+  const directory = mkdtempSync(join(tmpdir(), 'hujan-dedup-'));
   const path = join(directory, 'history.sqlite');
   let first: Conversations | undefined = new Conversations(path);
   const second = new Conversations(path);
@@ -15,7 +15,7 @@ test('duplicate Discord deliveries are claimed once across independent database 
   try {
     let generations = 0;
     const handle = async (store: Conversations) => {
-      if (!store.claimEvent('message:jarvis:123')) return;
+      if (!store.claimEvent('message:hujan:123')) return;
       generations++;
       await new Promise(resolve => setImmediate(resolve));
     };
@@ -24,25 +24,25 @@ test('duplicate Discord deliveries are claimed once across independent database 
     first.reset('member-public');
     first.close(); first = undefined;
     reopened = new Conversations(path);
-    assert.equal(reopened.claimEvent('message:jarvis:123'), false);
-    assert.equal(reopened.claimEvent('message:jarvis:124'), true);
+    assert.equal(reopened.claimEvent('message:hujan:123'), false);
+    assert.equal(reopened.claimEvent('message:hujan:124'), true);
     assert.equal(reopened.claimEvent('message:another-bot:123'), true);
-    assert.equal(reopened.claimEvent('interaction:jarvis:123'), true);
-    assert.equal(second.claimEvent('interaction:jarvis:123'), false);
+    assert.equal(reopened.claimEvent('interaction:hujan:123'), true);
+    assert.equal(second.claimEvent('interaction:hujan:123'), false);
   } finally { first?.close(); second.close(); reopened?.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('a failed attempt stays claimed so event replay cannot cause extra error replies or generations', async () => {
   const store = new Conversations(':memory:');
   try {
-    assert.equal(store.claimEvent('message:jarvis:failed'), true);
-    assert.equal(store.claimEvent('message:jarvis:failed'), false);
-    assert.equal(store.claimEvent('message:jarvis:new-retry'), true);
+    assert.equal(store.claimEvent('message:hujan:failed'), true);
+    assert.equal(store.claimEvent('message:hujan:failed'), false);
+    assert.equal(store.claimEvent('message:hujan:new-retry'), true);
   } finally { store.close(); }
 });
 
 test('runtime lock prevents duplicate startup and an older owner cannot remove a replacement lock', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'jarvis-lock-'));
+  const directory = mkdtempSync(join(tmpdir(), 'hujan-lock-'));
   const path = join(directory, 'runtime.lock');
   try {
     const release = runtimeLock(directory);

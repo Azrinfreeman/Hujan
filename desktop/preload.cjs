@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const call = (operation, argument = {}) => ipcRenderer.invoke('rainbot',operation,argument);
-contextBridge.exposeInMainWorld('rainbot',Object.freeze({
+const call = (operation, argument = {}) => ipcRenderer.invoke('hujan',operation,argument);
+contextBridge.exposeInMainWorld('hujan',Object.freeze({
   status:()=>call('status'),settings:()=>call('settings'),saveSettings:body=>call('saveSettings',body),
   voiceSummaryStatus:()=>call('voiceSummaryStatus'),
   localSpeechStatus:()=>call('localSpeechStatus'),localSpeechSetup:()=>call('localSpeechSetup'),localSpeechCancel:()=>call('localSpeechCancel'),

@@ -26,9 +26,9 @@ export class Nicknames {
       const actor=await this.checkActor(guild,actorId,channelId);
       const me=await guild.members.fetchMe({force:true});
       const target=await guild.members.fetch({user:request.targetId,force:true});
-      if (!me.permissions.has(PermissionFlagsBits.ManageNicknames)) throw new UserError('RainBot needs the Manage Nicknames permission in this server.');
+      if (!me.permissions.has(PermissionFlagsBits.ManageNicknames)) throw new UserError('Hujan needs the Manage Nicknames permission in this server.');
       if (target.id===guild.ownerId) throw new UserError('Discord does not let bots rename the server owner.');
-      if (!target.manageable || me.roles.highest.comparePositionTo(target.roles.highest)<=0) throw new UserError('Move RainBot’s role above this member’s highest role before changing their nickname.');
+      if (!target.manageable || me.roles.highest.comparePositionTo(target.roles.highest)<=0) throw new UserError('Move Hujan’s role above this member’s highest role before changing their nickname.');
       if (actorId!==this.config.ownerId && actorId!==guild.ownerId && actorId!==target.id && actor.roles.highest.comparePositionTo(target.roles.highest)<=0) {
         throw new UserError('You can only rename members below your highest role.');
       }
@@ -43,7 +43,7 @@ export class Nicknames {
       }
       catch(error) {
         const code=(error as {code?:number})?.code;
-        if (code===50013 || code===50001) throw new UserError('Discord denied the nickname change. Check RainBot’s Manage Nicknames permission and role position.');
+        if (code===50013 || code===50001) throw new UserError('Discord denied the nickname change. Check Hujan’s Manage Nicknames permission and role position.');
         throw new UserError('Discord did not confirm the nickname change. Check the member’s current nickname before sending a new request.');
       }
       const confirmation=`Requested by <@${actorId}>: <@${target.id}> now has the server nickname **${escapeMarkdown(request.nickname)}**.`;

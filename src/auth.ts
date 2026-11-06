@@ -70,7 +70,7 @@ export async function login(options: {signal?: AbortSignal; openBrowser?: (url: 
   const message = options.message ?? console.log;
   const signal = AbortSignal.any([AbortSignal.timeout(5 * 60 * 1000), ...(options.signal ? [options.signal] : [])]);
   if(signal.aborted)throw new UserError('Sign-in was cancelled. Connect again when ready.');
-  const destination = options.openBrowser ? 'RainBot' : 'your terminal';
+  const destination = options.openBrowser ? 'Hujan' : 'your terminal';
   // Switching accounts starts a fresh registration without deleting the old grant.
   const previous = options.newAccount ? undefined : credentialForLogin(message);
   const state = randomBytes(32).toString('base64url');

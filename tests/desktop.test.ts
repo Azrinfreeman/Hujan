@@ -15,7 +15,7 @@ const codec=(value: string)=>value;
 const ids={DISCORD_APPLICATION_ID:'123456789012345678',DISCORD_GUILD_ID:'223456789012345678',OWNER_DISCORD_ID:'323456789012345678'};
 
 test('switch account starts fresh registration and cancelled sign-in preserves unreadable saved connection', () => {
-  const root=mkdtempSync(join(tmpdir(),'rainbot-switch-'));
+  const root=mkdtempSync(join(tmpdir(),'hujan-switch-'));
   const saved=join(root,'chatgpt.dpapi');
   writeFileSync(saved,'synthetic-unreadable-connection');
   try {
@@ -53,21 +53,21 @@ test('desktop bridge rejects unknown operations, arbitrary arguments and foreign
   assert.throws(()=>validateRequest('saveSettings',{large:'x'.repeat(20000)}));
   assert.throws(()=>validateRequest('importCommit',{source:'C:/private'}));
   validateRequest('operation',{id:'12345678-1234-1234-1234-123456789012'});
-  const frame={url:'rainbot://app/#settings'}, contents={mainFrame:frame};
+  const frame={url:'hujan://app/#settings'}, contents={mainFrame:frame};
   assert.equal(validSender({sender:contents,senderFrame:frame},{webContents:contents}),true);
   assert.equal(validSender({sender:contents,senderFrame:{url:frame.url}},{webContents:contents}),false);
   frame.url='https://example.com/';
   assert.equal(validSender({sender:contents,senderFrame:frame},{webContents:contents}),false);
 });
 test('desktop resources and authorization destinations are tightly restricted',()=>{
-  assert.equal(resourcePath('rainbot://app/app.js','C:/ui'),join('C:/ui','app.js'));
-  assert.equal(resourcePath('rainbot://app/#settings','C:/ui'),join('C:/ui','index.html'));
-  for(const url of ['rainbot://other/app.js','rainbot://app/.env','rainbot://app/%2e%2e%2f.env','file:///C:/ui/app.js','rainbot://app/app.js?file=.env'])assert.equal(resourcePath(url,'C:/ui'),undefined);
+  assert.equal(resourcePath('hujan://app/app.js','C:/ui'),join('C:/ui','app.js'));
+  assert.equal(resourcePath('hujan://app/#settings','C:/ui'),join('C:/ui','index.html'));
+  for(const url of ['hujan://other/app.js','hujan://app/.env','hujan://app/%2e%2e%2f.env','file:///C:/ui/app.js','hujan://app/app.js?file=.env'])assert.equal(resourcePath(url,'C:/ui'),undefined);
   assert.equal(authURL('https://auth.openai.com/api/accounts/authorize?state=fixture'),'https://auth.openai.com/api/accounts/authorize?state=fixture');
   for(const url of ['https://evil.example/api/accounts/authorize','javascript:alert(1)','https://auth.openai.com/other','https://user@auth.openai.com/api/accounts/authorize'])assert.throws(()=>authURL(url));
 });
 test('desktop controller validates requests and redacts saved credentials',async()=>{
-  const root=mkdtempSync(join(tmpdir(),'rainbot-desktop-'));
+  const root=mkdtempSync(join(tmpdir(),'hujan-desktop-'));
   try {
     const settings=new SettingsStore(root,{},codec), controller=new DesktopController(settings);
     await assert.rejects(controller.dispatch('start',{pid:1}));
@@ -81,7 +81,7 @@ test('desktop controller validates requests and redacts saved credentials',async
   } finally {rmSync(root,{recursive:true,force:true});}
 });
 test('import copies consistent databases and settings without copying ownership or changing source',async()=>{
-  const root=mkdtempSync(join(tmpdir(),'rainbot-import-')), source=join(root,'source'), destination=join(root,'destination');
+  const root=mkdtempSync(join(tmpdir(),'hujan-import-')), source=join(root,'source'), destination=join(root,'destination');
   try {
     mkdirSync(join(source,'src'),{recursive:true});writeFileSync(join(source,'src/main.ts'),'// fixture');writeFileSync(join(source,'package.json'),'{}');
     writeFileSync(join(source,'.env'),`${Object.entries(ids).map(([key,value])=>`${key}=${value}`).join('\n')}\nDISCORD_BOT_TOKEN=synthetic-token\nRAIN_VOLUME=0.2\n`);
@@ -102,7 +102,7 @@ test('import copies consistent databases and settings without copying ownership 
   } finally {rmSync(root,{recursive:true,force:true});}
 });
 test('import refuses live/stale locks, incompatible encrypted credentials, and partial profiles',async()=>{
-  const root=mkdtempSync(join(tmpdir(),'rainbot-import-reject-')), source=join(root,'source'), destination=join(root,'destination');
+  const root=mkdtempSync(join(tmpdir(),'hujan-import-reject-')), source=join(root,'source'), destination=join(root,'destination');
   try {
     mkdirSync(join(source,'src'),{recursive:true});writeFileSync(join(source,'src/main.ts'),'// fixture');writeFileSync(join(source,'package.json'),'{}');
     writeFileSync(join(source,'.env'),`DISCORD_APPLICATION_ID=${ids.DISCORD_APPLICATION_ID}\n`);

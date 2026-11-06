@@ -1,9 +1,9 @@
 import { join } from 'node:path';
 import { LocalSpeechSetup } from '../src/voice-summary/local-setup.js';
-import { stateRoot } from '../src/app-paths.js';
+import { stateRoot, desktopStateRoot } from '../src/app-paths.js';
 import { safeError } from '../src/errors.js';
 
-const root=process.argv.includes('--desktop') ? join(process.env.LOCALAPPDATA!,'RainBot') : stateRoot;
+const root=process.argv.includes('--desktop') ? desktopStateRoot() : stateRoot;
 const setup=new LocalSpeechSetup(root);
 const cancel=()=>setup.cancel();process.once('SIGINT',cancel);process.once('SIGTERM',cancel);
 let last=-10;

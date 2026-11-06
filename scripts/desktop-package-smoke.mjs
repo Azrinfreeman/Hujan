@@ -10,8 +10,8 @@ import { randomUUID } from 'node:crypto';
 import { inspectProcess } from '../desktop/.stage/backend/src/integration/runtime-control.js';
 
 const exec=promisify(execFile), root=fileURLToPath(new URL('../',import.meta.url));
-const packaged=join(root,'desktop/out/RainBot-win32-x64');
-const executable=join(packaged,'RainBot.exe'), resources=join(packaged,'resources');
+const packaged=join(root,'desktop/out/Hujan-win32-x64');
+const executable=join(packaged,'Hujan.exe'), resources=join(packaged,'resources');
 const output=join(root,'output/desktop-package',randomUUID());await mkdir(output,{recursive:true});
 const env={};for(const key of ['SystemRoot','SYSTEMROOT','WINDIR','TEMP','TMP','USERPROFILE','PATHEXT'])if(process.env[key] !== undefined)env[key]=process.env[key];
 Object.assign(env,{LOCALAPPDATA:output,APPDATA:join(output,'roaming'),PATH:join(process.env.SystemRoot || 'C:/Windows','System32')});
@@ -56,10 +56,10 @@ try {
     const result=await exec(resolve(process.env.SystemRoot || 'C:/Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),
       ['-NoProfile','-NonInteractive','-Command',`$p=Get-Process -Id ${first.pid} -ErrorAction SilentlyContinue; if($p){$p.MainWindowTitle}; exit 0`],{windowsHide:true,timeout:10000});
     titles.add(result.stdout.trim());
-    if(result.stdout.trim().includes('RainBot')){ready=true;break;}
+    if(result.stdout.trim().includes('Hujan')){ready=true;break;}
     await new Promise(resolve=>setTimeout(resolve,1000));
   }
-  assert.equal(ready,true,`Packaged RainBot window did not become ready. Titles: ${JSON.stringify([...titles])}`);
+  assert.equal(ready,true,`Packaged Hujan window did not become ready. Titles: ${JSON.stringify([...titles])}`);
   const graph=await exec(resolve(process.env.SystemRoot || 'C:/Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),
     ['-NoProfile','-NonInteractive','-Command',`Get-CimInstance Win32_Process -Filter 'ParentProcessId=${first.pid}' | Select-Object ProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress`],{windowsHide:true,timeout:10000});
   const parsed=JSON.parse(graph.stdout);const records=Array.isArray(parsed)?parsed:[parsed];
@@ -69,7 +69,7 @@ try {
   const second=launch();
   await Promise.race([once(second,'exit'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Second instance did not exit.')),10000))]);
   assert.equal(second.exitCode,0);assert.equal(first.exitCode,null);
-  assert.equal(existsSync(join(output,'RainBot/data/frontend')),false);
+  assert.equal(existsSync(join(output,'Hujan/data/frontend')),false);
   console.log('Packaged window and single-instance checks passed without a system Node installation on PATH.');
 } finally {
   // These are only this script's idle GUI children, using a fresh profile with no bot configuration.
@@ -80,4 +80,4 @@ if(controllerPid) {
   do {remaining=await inspectProcess(controllerPid);if(remaining)await new Promise(resolve=>setTimeout(resolve,200));}while(remaining && Date.now()<until);
   assert.equal(remaining,null,'The controller should exit after its app disconnects.');
 }
-await writeFile(join(root,'output/desktop-package/result.json'),JSON.stringify({passed:true,checks:['packaged executable startup','bundled Node with no system Node on PATH','sharp/Opus/SQLite dependencies','no private data or smoke code in application package','single-instance focus/exit','controller exits after app disconnect'],installerBytes:(await stat(join(root,'desktop/out/make/squirrel.windows/x64/RainBotSetup.exe'))).size,output},null,2));
+await writeFile(join(root,'output/desktop-package/result.json'),JSON.stringify({passed:true,checks:['packaged executable startup','bundled Node with no system Node on PATH','sharp/Opus/SQLite dependencies','no private data or smoke code in application package','single-instance focus/exit','controller exits after app disconnect'],installerBytes:(await stat(join(root,'desktop/out/make/squirrel.windows/x64/HujanSetup.exe'))).size,output},null,2));

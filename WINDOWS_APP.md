@@ -1,8 +1,8 @@
-# RainBot for Windows
+# Hujan for Windows
 
 ## Install and configure
 
-The Windows x64 installer is `desktop/out/make/squirrel.windows/x64/RainBotSetup.exe`. Open it, then launch **RainBot** from the Start menu. The app includes its own Node runtime; normal use requires no browser dashboard, terminal, npm, or source checkout.
+The Windows x64 installer is `desktop/out/make/squirrel.windows/x64/HujanSetup.exe`. Open it, then launch **Hujan** from the Start menu. The app includes its own Node runtime; normal use requires no browser dashboard, terminal, npm, or source checkout.
 
 This development installer is **unsigned**. Public distribution still needs owner-provided code signing. No certificate or signing service was purchased or configured.
 
@@ -25,14 +25,16 @@ To reconnect or change ChatGPT accounts, save your settings and stop the bot, th
 
 - Start/Stop controls manage the verified Discord frontend and AI worker together. Connection readiness is shown separately.
 - Saving settings applies them on the next start and never restarts the bot automatically.
-- Closing the window hides RainBot to the system tray. Double-click its tray icon to reopen it.
+- Closing the window hides Hujan to the system tray. Double-click its tray icon to reopen it.
 - **Quit app (keep bot running)** closes the UI while the bot continues. Reopening reconnects to that installation's authenticated control channel.
 - **Stop bot and quit** waits for verified cooperative shutdown. An unsuccessful shutdown leaves the app available and reports the failure; no process is force-stopped.
 - No launch-at-sign-in, automatic bot startup, Windows service, automatic updater, or hosted server is installed. The PC must remain awake and online.
 
 ## Local files and protection
 
-Desktop state lives under `%LOCALAPPDATA%\RainBot`:
+Desktop state lives under `%LOCALAPPDATA%\Hujan`:
+
+> If an installation predates the Hujan rename, the app keeps using its existing `%LOCALAPPDATA%\RainBot` folder so saved credentials and the downloaded speech model carry over. Once a `%LOCALAPPDATA%\Hujan` folder exists, that folder is used instead.
 
 | Location | Contents |
 | --- | --- |
@@ -88,7 +90,7 @@ Re-run preparation after source/UI/dependency changes before packaging. The focu
 
 Forge emits the installer, `.nupkg`, and `RELEASES` metadata. Its lifecycle handler exits before normal UI/controller startup during installer events. The build selects its vendor x64 7-Zip files explicitly because npm may block that dependency's install script; it does not change global npm permissions.
 
-For a signed release, supply `RAINBOT_SIGN_CERT` and `RAINBOT_SIGN_PASSWORD` through protected build infrastructure. Do not save signing secrets in this repository. Validate the resulting installer signature and Windows trust experience before distributing it.
+For a signed release, supply `HUJAN_SIGN_CERT` and `HUJAN_SIGN_PASSWORD` through protected build infrastructure. Do not save signing secrets in this repository. Validate the resulting installer signature and Windows trust experience before distributing it.
 
 ## Verification limits
 

@@ -77,7 +77,7 @@ export async function inspectProcess(pid: number): Promise<ProcessIdentity | nul
   });
 }
 
-export const pipePath = (root: string) => `\\\\.\\pipe\\rainbot-${createHash('sha256').update(canonical(root)).digest('hex').slice(0,32)}`;
+export const pipePath = (root: string) => `\\\\.\\pipe\\hujan-${createHash('sha256').update(canonical(root)).digest('hex').slice(0,32)}`;
 const descriptorPath = (root: string) => join(root, 'data/dashboard/runtime.json');
 export function controlSecret(root: string, create = false, codec = protect): string {
   const path = join(root, 'data/dashboard/control.dpapi');
@@ -119,7 +119,7 @@ export async function startRuntimeControl(options: { root?: string; revision: st
   if (!own) throw new UserError('Cannot inspect the bot process for local control.');
   const secret = options.secret ?? controlSecret(root, true);
   const identity: RuntimeIdentity = { pid:process.pid, created:own.created, instance:randomUUID(), root:resolve(root), revision:options.revision,
-    ...(process.env.RAINBOT_RESOURCE_ROOT ? {build:{protocol:1 as const,resources:resourceRoot,runtime:process.execPath}} : {}) };
+    ...(process.env.HUJAN_RESOURCE_ROOT ? {build:{protocol:1 as const,resources:resourceRoot,runtime:process.execPath}} : {}) };
   const seen = new Set<string>();
   const server = createServer(socket => {
     socket.setTimeout(4000, () => socket.destroy());

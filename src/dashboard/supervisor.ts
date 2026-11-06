@@ -153,7 +153,7 @@ export class BotSupervisor {
     if (previous && await this.deps.inspect(previous.pid)) throw new UserError('A companion process already exists. No duplicate was started.');
     const previousLaunch = this.launchRecord();
     if (previousLaunch && await this.deps.inspect(previousLaunch.pid)) throw new UserError('A previous launch is still running. Inspect it before retrying; no duplicate was started.');
-    const assets = resolve(env.SLEEP_ASSET_DIR || (process.env.RAINBOT_RESOURCE_ROOT ? defaultAssets : join(this.settings.root,'assets')));
+    const assets = resolve(env.SLEEP_ASSET_DIR || (process.env.HUJAN_RESOURCE_ROOT ? defaultAssets : join(this.settings.root,'assets')));
     for (const key of ['RAIN_ASSET_PATH','SUNNY_ASSET_PATH']) if (env[key] && !existsSync(resolve(env[key]!))) throw new UserError('A configured ambience asset is missing. Check the deployment paths.');
     for (const file of ['rain-loop.pcm','rain-soft-loop.pcm','rain-indoor-loop.pcm','rain-glass-loop.pcm','rain-heavy-loop.pcm','sunny-birds-loop.pcm','thunder-distant-a.pcm','thunder-distant-b.pcm','thunder-distant-c.pcm','thunder-distant-d.pcm']) {
       if (!existsSync(join(assets,file))) throw new UserError('Required ambience assets are missing. Restore the bundled assets before starting.');

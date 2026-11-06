@@ -135,7 +135,7 @@ try {
   const stub = process.env.AI_PROVIDER === 'stub';
   if (stub) { provider = new StubProvider(); chat = new ChatService(provider,store); state('ready','Offline stub (no AI request)'); }
   else {
-    const instructions = () => `${botInstructions()}\n\nYour AI persona is Jarvis. This combined Discord application may be displayed as RainBot; Jarvis and RainBot both refer to you. This Discord bot also provides deterministic /sleep commands. You cannot join, leave, change ambience or control voice. For requested sleep actions, direct the member to the appropriate /sleep command; never claim an action was executed.`;
+    const instructions = () => `${botInstructions()}\n\nYour AI persona is Hujan. Answer to your current Discord display name in each server; if members give you a nickname, that name refers to you too. This Discord bot also provides deterministic /sleep commands. You cannot join, leave, change ambience or control voice. For requested sleep actions, direct the member to the appropriate /sleep command; never claim an action was executed.`;
     if (process.env.AI_PROVIDER === 'openai') {
       const key = process.env.OPENAI_API_KEY ?? '';
       const model = process.env.OPENAI_MODEL?.trim() ?? '';

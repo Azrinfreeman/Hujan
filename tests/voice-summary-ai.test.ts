@@ -74,7 +74,7 @@ test('summary mode overrides all personality instructions and disables tools in 
       assert.equal(body.store, false); assert.equal(body.instructions, voiceSummaryInstructions);
       assert.equal(body.input.length, 1); assert.equal(body.input[0].role, 'user');
       assert.deepEqual(JSON.parse(body.input[0].content), injected);
-      assert.doesNotMatch(body.instructions, /Jarvis|RainBot|change_server_nickname/);
+      assert.doesNotMatch(body.instructions, /Hujan|change_server_nickname/);
       return stream(json());
     };
     const personality = () => { throw new Error('Normal instructions must not be read'); };

@@ -8,7 +8,7 @@ import { RequestQueue } from '../src/queue.js';
 import { maxImageBytes, downloadImage } from '../src/images.js';
 import type { ProviderMessage } from '../src/provider.js';
 
-const scope = { guildId: 'guild', channelId: 'channel', botId: 'jarvis', botName: 'Jarvis', userId: 'member', userName: 'Melon' };
+const scope = { guildId: 'guild', channelId: 'channel', botId: 'hujan', botName: 'Hujan', userId: 'member', userName: 'Melon' };
 const reference = { guildId: scope.guildId, channelId: scope.channelId, messageId: 'original' };
 const image = { url: 'https://cdn.discordapp.com/attachments/channel/message/screenshot.png?ex=signature', size: 100, contentType: 'application/unknown', filename: 'screenshot.png' };
 const target: ReplyTarget = { id: 'original', channelId: scope.channelId, content: '', author: { id: 'another-member', name: 'Friend' }, attachments: [image] };

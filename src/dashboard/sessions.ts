@@ -7,7 +7,7 @@ export function equalSecret(left: unknown, right: string) {
   return typeof left === 'string' && Buffer.byteLength(left) === Buffer.byteLength(right) && timingSafeEqual(Buffer.from(left), Buffer.from(right));
 }
 export class OwnerSessions {
-  private cookieName = `rainbot_${randomBytes(8).toString('hex')}`;
+  private cookieName = `hujan_${randomBytes(8).toString('hex')}`;
   private code = random();
   private issued = Date.now();
   private sessions = new Map<string, { csrf: string; expires: number }>();

@@ -13,7 +13,13 @@ if(process.platform !== 'win32' || process.arch !== 'x64')throw new Error('Build
 const npmCLI=process.env.npm_execpath;
 if(!npmCLI || !existsSync(npmCLI))throw new Error('Run this build through npm run desktop:prepare.');
 function run(entry,args,cwd=root) {
-  const result=spawnSync(process.execPath,[entry,...args],{cwd,stdio:'inherit',windowsHide:true,shell:false});
+  // `npm run` exports the ambient allow-scripts policy as npm_config_* env
+  // vars; the production install below explicitly disables lifecycle scripts
+  // and must not inherit a policy that npm 11 rejects for project installs.
+  const env={...process.env};
+  delete env.npm_config_allow_scripts;
+  delete env.npm_config_ignore_scripts;
+  const result=spawnSync(process.execPath,[entry,...args],{cwd,env,stdio:'inherit',windowsHide:true,shell:false});
   if(result.error || result.status !== 0)throw new Error('Desktop preparation failed; inspect the build output.');
 }
 function safeStage(path) {
@@ -44,9 +50,9 @@ for(const file of ['index.html','app.js','styles.css','transport.js'])await copy
 // Keep the optional recovery dashboard complete in the staged backend, too.
 await cp(ui,join(backend,'src/dashboard/public'),{recursive:true});
 const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="60" fill="#2563eb"/><path d="M70 146a35 35 0 1 1 5-69 44 44 0 0 1 82 13 28 28 0 1 1 15 56" fill="none" stroke="white" stroke-width="14" stroke-linecap="round"/><path d="m80 175-8 16m55-16-8 16m55-16-8 16" stroke="#b7f0dc" stroke-width="13" stroke-linecap="round"/></svg>');
-const png=await sharp(svg).png().toBuffer();await writeFile(join(ui,'rainbot.png'),png);
+const png=await sharp(svg).png().toBuffer();await writeFile(join(ui,'hujan.png'),png);
 const header=Buffer.alloc(22);header.writeUInt16LE(1,2);header.writeUInt16LE(1,4);header.writeUInt16LE(1,10);header.writeUInt16LE(32,12);header.writeUInt32LE(png.length,14);header.writeUInt32LE(22,18);
-await writeFile(join(ui,'rainbot.ico'),Buffer.concat([header,png]));
+await writeFile(join(ui,'hujan.ico'),Buffer.concat([header,png]));
 const checksums=(await download(`https://nodejs.org/dist/v${nodeVersion}/SHASUMS256.txt`)).toString('utf8');
 const expected=checksums.split('\n').map(line=>line.trim().split(/\s+/)).find(parts=>parts[1] === 'win-x64/node.exe')?.[0];
 if(!expected || !/^[a-f\d]{64}$/.test(expected))throw new Error('Missing official Node executable checksum.');

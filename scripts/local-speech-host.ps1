@@ -12,7 +12,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-public static class RainBotSpeechHost {
+public static class HujanSpeechHost {
   [StructLayout(LayoutKind.Sequential)] struct BasicLimits {
     public long ProcessTime, JobTime; public uint Flags; public UIntPtr Minimum, Maximum;
     public uint Processes; public UIntPtr Affinity; public uint Priority, Scheduling;
@@ -56,4 +56,4 @@ public static class RainBotSpeechHost {
   }
 }
 '@
-exit [RainBotSpeechHost]::Run([IO.Path]::GetFullPath($EngineDirectory),[IO.Path]::GetFullPath($ModelPath),$Port,$RequestPath,$Device,$Threads)
+exit [HujanSpeechHost]::Run([IO.Path]::GetFullPath($EngineDirectory),[IO.Path]::GetFullPath($ModelPath),$Port,$RequestPath,$Device,$Threads)

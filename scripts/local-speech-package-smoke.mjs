@@ -4,12 +4,12 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const resources=join(root,'desktop/out/RainBot-win32-x64/resources');
+const resources=join(root,'desktop/out/Hujan-win32-x64/resources');
 const backend=join(resources,'backend');
-const modelRoot=join(process.env.LOCALAPPDATA,'RainBot');
+const modelRoot=join(process.env.LOCALAPPDATA,'Hujan');
 const env={};
 for(const name of ['SystemRoot','SYSTEMROOT','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA'])if(process.env[name]!==undefined)env[name]=process.env[name];
-env.PATH=join(process.env.SystemRoot||'C:/Windows','System32');env.RAINBOT_RESOURCE_ROOT=backend;
+env.PATH=join(process.env.SystemRoot||'C:/Windows','System32');env.HUJAN_RESOURCE_ROOT=backend;
 const code=`
 const {LocalSpeechEngine}=await import(${JSON.stringify(pathToFileURL(join(backend,'src/voice-summary/local-engine.js')).href)});
 const engine=new LocalSpeechEngine(${JSON.stringify(modelRoot)},'vulkan');

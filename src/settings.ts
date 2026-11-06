@@ -104,7 +104,7 @@ export class SettingsStore {
     for (const [key, value] of Object.entries(this.inherited)) if (![...valueKeys, ...secretKeys].includes(key as ValueKey)) env[key] = value;
     delete env.DISCORD_TOKEN;
     for (const key of pathKeys) if (env[key]) env[key] = resolve(this.root,env[key]!);
-    if (process.env.RAINBOT_RESOURCE_ROOT && !env.SLEEP_ASSET_DIR) env.SLEEP_ASSET_DIR = defaultAssets;
+    if (process.env.HUJAN_RESOURCE_ROOT && !env.SLEEP_ASSET_DIR) env.SLEEP_ASSET_DIR = defaultAssets;
     // Hash non-secret effective settings and credential-source revisions, never raw secrets.
     const legacyPath = join(this.root,'.env');
     const legacyFile = existsSync(legacyPath) ? statSync(legacyPath) : undefined;

@@ -1,10 +1,10 @@
 {
-  "name": "rainbot-desktop",
-  "productName": "RainBot",
+  "name": "hujan-desktop",
+  "productName": "Hujan",
   "version": "0.3.3",
   "private": true,
   "description": "Personal Discord companion and ambience controls",
-  "author": "RainBot contributors",
+  "author": "Hujan contributors",
   "type": "module",
   "main": "main.mjs",
   "scripts": {

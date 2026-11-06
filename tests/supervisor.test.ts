@@ -10,7 +10,7 @@ import { ownsProcess, type ProcessIdentity, type RuntimeIdentity } from '../src/
 
 const id='123456789012345678';
 async function fixture(run: (context: ReturnType<typeof setup>) => Promise<void>) {
-  const root=mkdtempSync(join(tmpdir(),'rainbot-supervisor-'));
+  const root=mkdtempSync(join(tmpdir(),'hujan-supervisor-'));
   try { await run(setup(root)); } finally { rmSync(root,{recursive:true,force:true}); }
 }
 function setup(root: string) {

@@ -15,7 +15,7 @@ import { runInNewContext } from 'node:vm';
 
 const codec = (value: string, decrypt = false) => decrypt ? Buffer.from(value,'base64').toString() : Buffer.from(value).toString('base64');
 async function fixture(run: (settings: SettingsStore, path: string) => Promise<void> | void) {
-  const root = mkdtempSync(join(tmpdir(),'rainbot-voice-settings-'));
+  const root = mkdtempSync(join(tmpdir(),'hujan-voice-settings-'));
   mkdirSync(join(root,'data'));
   try { await run(new SettingsStore(root,{},codec),join(root,'data/voice-summary-status.json')); }
   finally { rmSync(root,{recursive:true,force:true}); }
@@ -251,17 +251,17 @@ test('desktop transport and preload expose only fixed no-argument local setup ro
   let bridge: Record<string,()=>Promise<unknown>>={};
   runInNewContext(readFileSync(new URL('../desktop/preload.cjs',import.meta.url),'utf8'),{
     require:(name: string)=>{assert.equal(name,'electron');return {
-      contextBridge:{exposeInMainWorld:(name: string,value: typeof bridge)=>{assert.equal(name,'rainbot');bridge=value;}},
-      ipcRenderer:{invoke:async (channel: string,operation: string,argument: unknown)=>{assert.equal(channel,'rainbot');calls.push(operation);assert.equal(JSON.stringify(argument),'{}');return setupStatus();}},
+      contextBridge:{exposeInMainWorld:(name: string,value: typeof bridge)=>{assert.equal(name,'hujan');bridge=value;}},
+      ipcRenderer:{invoke:async (channel: string,operation: string,argument: unknown)=>{assert.equal(channel,'hujan');calls.push(operation);assert.equal(JSON.stringify(argument),'{}');return setupStatus();}},
     };},
   });
-  const window={rainbot:bridge} as {rainbot:typeof bridge;rainbotRequest:(path:string, options?:{method:string;body:string})=>Promise<{ok:boolean;json:()=>Promise<unknown>}>};
+  const window={hujan:bridge} as {hujan:typeof bridge;hujanRequest:(path:string, options?:{method:string;body:string})=>Promise<{ok:boolean;json:()=>Promise<unknown>}>};
   runInNewContext(readFileSync(new URL('../src/dashboard/public/transport.js',import.meta.url),'utf8'),{window});
   for (const [path,method] of [['/api/voice-summary/local','GET'],['/api/voice-summary/local/setup','POST'],['/api/voice-summary/local/cancel','POST']]) {
-    const response=await window.rainbotRequest(path!,{method:method!,body:'{}'});
+    const response=await window.hujanRequest(path!,{method:method!,body:'{}'});
     const body=await response.json();
     assert.equal(response.ok,true,JSON.stringify(body)); assert.deepEqual(body,setupStatus());
   }
   assert.deepEqual(calls,['localSpeechStatus','localSpeechSetup','localSpeechCancel']);
-  assert.equal((await window.rainbotRequest('/api/voice-summary/local/arbitrary',{method:'POST',body:'{}'})).ok,false);
+  assert.equal((await window.hujanRequest('/api/voice-summary/local/arbitrary',{method:'POST',body:'{}'})).ok,false);
 });

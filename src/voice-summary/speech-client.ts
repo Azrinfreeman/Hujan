@@ -9,7 +9,7 @@ import { LocalSpeechEngine } from './local-engine.js';
 
 export function speechEnvironment(config:VoiceConfig, env=process.env):NodeJS.ProcessEnv {
   const result:NodeJS.ProcessEnv={};
-  for (const key of ['SystemRoot','SYSTEMROOT','WINDIR','TEMP','TMP','PATH','Path','RAINBOT_STATE_ROOT','RAINBOT_RESOURCE_ROOT']) if (env[key] !== undefined) result[key]=env[key];
+  for (const key of ['SystemRoot','SYSTEMROOT','WINDIR','TEMP','TMP','PATH','Path','HUJAN_STATE_ROOT','HUJAN_RESOURCE_ROOT']) if (env[key] !== undefined) result[key]=env[key];
   return {...result,VOICE_SUMMARY_PROVIDER:config.provider,VOICE_SUMMARY_LOCAL_DEVICE:config.localDevice,
     ...(config.provider==='openai'?{VOICE_SUMMARY_API_KEY:config.key}:{}),VOICE_SUMMARY_MODEL:config.model,
     VOICE_SUMMARY_LANGUAGES:config.languages.join(','),VOICE_SUMMARY_GLOSSARY:config.glossary};

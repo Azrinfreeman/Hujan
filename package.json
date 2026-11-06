@@ -1,7 +1,8 @@
 {
-  "name": "jarvis-sleep-companion",
+  "name": "hujan",
   "version": "0.3.3",
   "private": true,
+  "description": "Hujan — a self-hosted Discord companion with AI assistance, sleep ambience, local voice summaries, and a Windows desktop app.",
   "type": "module",
   "engines": {
     "node": ">=24.19.0 <25"
@@ -9,7 +10,7 @@
   "scripts": {
     "desktop:prepare": "node scripts/desktop-build.mjs",
     "desktop": "npm --prefix desktop start",
-    "desktop:smoke": "npm --prefix desktop start -- --rainbot-smoke",
+    "desktop:smoke": "npm --prefix desktop start -- --hujan-smoke",
     "desktop:package": "npm --prefix desktop run package",
     "desktop:make": "npm --prefix desktop run make",
     "dashboard": "node --import tsx src/dashboard/server.ts",

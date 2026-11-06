@@ -1,6 +1,24 @@
-# Jarvis + Sleep Companion
+# Hujan
 
-A combined Discord application built from the existing Jarvis and DiscordSleepBot projects. The visible application is the existing **RainBot** identity. It hosts Jarvis text/image assistance and sleep ambience through one Discord connection. Jarvis inference, image conversion and DPAPI work run in a supervised child process.
+Hujan (Malay for "rain") is a self-hosted Discord companion: an AI assistant with a roasting Sabah Malay personality, rain and sleep ambience, consent-gated local voice summaries, and a Windows desktop app — all through one Discord connection. AI inference, image conversion and DPAPI credential work run in a supervised child process.
+
+## Features
+
+- **AI assistant with a personality** — ask questions, explain a selected message, or attach a screenshot. A tool-calling layer lets the model rename server members via `/nickname` or a plain mention. Runs on an existing ChatGPT subscription or an OpenAI API key.
+- **Rain and sleep ambience** — `/sleep join mode:rain|sunny|silent`, scene styles, and thunder, streamed to a voice channel from local PCM.
+- **Local voice summaries** — consent-gated, speaker-separated capture of a rolling five-minute window, transcribed offline with Whisper `large-v3-q5_0` on Vulkan/CPU, then summarized in the channel's own text chat. No per-minute API charge, with Malay WER/CER evaluation built in.
+- **Windows desktop app** — an Electron app with a system tray, Start/Stop, protected settings, and a bundled Node runtime (no system Node needed).
+- **Local web dashboard** — a Material-inspired owner interface (Overview, Ambience, Commands, System Health, Settings) bound to `127.0.0.1` with CSRF and session protection.
+
+## Engineering highlights
+
+- **Process isolation** — a supervised AI worker runs inference, image conversion, and DPAPI work as a child process, kept off Discord credentials and API keys.
+- **Credential protection** — Discord and AI credentials are encrypted with Windows DPAPI and stored as versioned revisions with atomic replacement and rollback.
+- **Deterministic tool safety** — one exact function capability per request; a completed call is validated before any Discord mutation runs.
+- **Durable delivery** — SQLite event claims and mention nonces prevent replayed actions after a restart.
+- **Verified** — `233/233` automated tests and a clean TypeScript check; the desktop app is exercised through Electron smoke and packaged-runtime checks.
+
+The sections below cover operations: how to run it, self-hosting, Discord commands, voice-summary consent, storage, maintenance, and rollback.
 
 ## Start and stop
 
@@ -15,19 +33,19 @@ npm start
 
 Keep the terminal open. Press Ctrl+C to stop both processes. If the background deployment is already running, a second start is intentionally rejected by the frontend lock. Use the existing process or stop its **verified** PID first. No automatic Windows startup/service is installed.
 
-Do not start either original bot alongside the combined runtime. The original sleep project has no compatible ownership guard and would share the same Discord token; the original Jarvis would consume the same connected AI grant through a different credential copy.
+Do not start either original bot alongside the combined runtime. The original sleep project has no compatible ownership guard and would share the same Discord token; the original assistant project would consume the same connected AI grant through a different credential copy.
 
 Local operational status is written every 10 seconds to `data/runtime-status.json`: Discord readiness, AI state, active voice/player state, frontend memory, interval CPU and event-loop delay. The file does not contain member messages, tokens or account identities. It is a local snapshot, not a substitute for checking that its PID is still running. Startup output goes to `data/bot.stdout.log` and `data/bot.stderr.log` for the hidden deployment.
 
 ## Windows app
 
-A dedicated RainBot Windows application is available, with its own window, system tray, Start/Stop, protected self-hosting settings, setup actions, and bundled runtime. Build output: `desktop/out/make/squirrel.windows/x64/RainBotSetup.exe`. The current installer is unsigned. See [Windows installation, import, build and recovery](WINDOWS_APP.md). Desktop state is separate under `%LOCALAPPDATA%\RainBot`; importing the source installation is explicit and requires it to be stopped first.
+A dedicated Hujan Windows application is available, with its own window, system tray, Start/Stop, protected self-hosting settings, setup actions, and bundled runtime. Build output: `desktop/out/make/squirrel.windows/x64/HujanSetup.exe`. The current installer is unsigned. See [Windows installation, import, build and recovery](WINDOWS_APP.md). Desktop state is separate under `%LOCALAPPDATA%\Hujan`; importing the source installation is explicit and requires it to be stopped first.
 
 The browser dashboard below remains available for source-based development and recovery.
 
 ## Local web dashboard
 
-Run `npm run dashboard`, then open [RainBot workspace](http://127.0.0.1:3210). Choose **Connect workspace** and enter the single-use local access code printed in the terminal. The code expires after 10 minutes; the browser session lasts 12 hours. Restarting the dashboard issues a new code and does not stop the bot. Keep the dashboard terminal open; Ctrl+C closes the dashboard.
+Run `npm run dashboard`, then open [Hujan workspace](http://127.0.0.1:3210). Choose **Connect workspace** and enter the single-use local access code printed in the terminal. The code expires after 10 minutes; the browser session lasts 12 hours. Restarting the dashboard issues a new code and does not stop the bot. Keep the dashboard terminal open; Ctrl+C closes the dashboard.
 
 The responsive Material Design-inspired interface includes Overview, Ambience, searchable Commands, System Health, and Settings, with light/dark themes. It refreshes operational status every 10 seconds and marks stale or stopped runtimes offline. No additional dependencies or frontend build are required.
 
@@ -68,10 +86,10 @@ On settings corruption, stop any verified bot first and restore a consistent `se
 
 | Action | Command |
 | --- | --- |
-| Ask Jarvis | `/ask prompt:...` or mention RainBot with a question |
+| Ask Hujan | `/ask prompt:...` or mention Hujan with a question |
 | Private AI answer | `/ask prompt:... private:true` |
-| Attach a screenshot | `/ask image:...` with an optional prompt, or tag RainBot in a message with one attachment |
-| Explain a selected message | Reply to that message, mention RainBot and say what to explain |
+| Attach a screenshot | `/ask image:...` with an optional prompt, or tag Hujan in a message with one attachment |
+| Explain a selected message | Reply to that message, mention Hujan and say what to explain |
 | Clear your AI context in this channel | `/reset` |
 | Change a member’s server nickname | `/nickname member:@Ali name:Raja Tidur` |
 | Check AI connection | `/status` |
@@ -92,11 +110,11 @@ The optional **OpenAI API** transcription provider preserves the previous `gpt-t
 
 The Windows Vulkan runtime is a checksum-pinned community build from `nyancodex/whisper-server-vulkan-windows` v0.1.0, based on upstream whisper.cpp 1.9.5 (`d1be6fde11ac6e0407606b4e42fe72d34add8037`). The model is pinned to a specific Hugging Face revision and SHA-256. Files live under the profile's `data/local-speech/` outside the installer. Setup includes third-party notices; engine/model files are verified before native execution. The native server is restricted to an ephemeral loopback port and unpredictable request prefix, runs without API credentials, and is contained in a Windows kill-on-close process job. No local audio is uploaded to a transcription service.
 
-For source use, `npm run voice:local:setup` installs into this project's data directory. Add `-- --desktop` to target `%LOCALAPPDATA%/RainBot` instead. `npm run voice:local:smoke -- --desktop --pipeline` checks the full Opus/local-worker/Vulkan path using a downloaded public-domain English sample, with no Discord recording or speech API submission. The test requires internet only to fetch that public sample; normal local transcription uses the already downloaded model.
+For source use, `npm run voice:local:setup` installs into this project's data directory. Add `-- --desktop` to target `%LOCALAPPDATA%/Hujan` instead. `npm run voice:local:smoke -- --desktop --pipeline` checks the full Opus/local-worker/Vulkan path using a downloaded public-domain English sample, with no Discord recording or speech API submission. The test requires internet only to fetch that public sample; normal local transcription uses the already downloaded model.
 
 1. An authorized sleep controller in a standard voice channel runs `/voice-summary start`. Existing ambience is preserved; if disconnected, the bot joins silently. A public notice explains capture and the selected local/cloud destination before audio is accepted.
 2. By default, every human participant runs `/voice-summary consent`; capture begins only once everyone opts in. For a server whose beta testers have all already consented, choose **Consent → Server beta testers already consented** in Settings, save, and restart. `/voice-summary start` then announces and begins listening without individual commands. This applies only to the configured server and does not start listening on launch. In server mode, participants join and leave automatically without resetting coverage, cancelling requested summaries, or posting participant-change messages. Departed speakers' audio remains until the rolling window expires; an empty channel stays idle while the connection is healthy. Individual mode still resets on membership changes and requires fresh consent. A bot disconnect, move, deafen, receive failure, or resource limit pauses capture and requires a new session. `/voice-summary withdraw` lets any participant stop and clear pending audio/results in either mode; controllers can also `/voice-summary stop`.
-3. After four or five minutes of continuous authorized listening, use the channel's own text chat: `@RainBot ringkaskan perbualan voice 5 minit tadi`, `@RainBot summarize the last 4 minutes of voice chat`, or `/voice-summary summarize minutes:5`. The requester must be in the same voice channel and satisfy normal AI access rules when submitting. In server mode, an accepted result can finish after the requester leaves or moves voice, provided they still belong to the server and retain AI access and visibility of the original result channel. Results stay in that original channel. Authorized server-consent participants can request speech retained from before they joined; the bot cannot reconstruct speech from before capture started. Leaving voice does not withdraw consent; use `/voice-summary withdraw` to stop and discard pending results.
+3. After four or five minutes of continuous authorized listening, use the channel's own text chat: `@Hujan ringkaskan perbualan voice 5 minit tadi`, `@Hujan summarize the last 4 minutes of voice chat`, or `/voice-summary summarize minutes:5`. The requester must be in the same voice channel and satisfy normal AI access rules when submitting. In server mode, an accepted result can finish after the requester leaves or moves voice, provided they still belong to the server and retain AI access and visibility of the original result channel. Results stay in that original channel. Authorized server-consent participants can request speech retained from before they joined; the bot cannot reconstruct speech from before capture started. Leaving voice does not withdraw consent; use `/voice-summary withdraw` to stop and discard pending results.
 4. For checking recognition, use `/voice-summary transcript minutes:5`, or `/voice-summary test seconds:30` after at least 30 seconds of capture. Raw recognized text includes speaker names, segment IDs, approximate relative times, and the configured model; it is not independently verified or silently rewritten. Summary bullets reference transcript segment IDs, which provide traceability rather than a guarantee of factual accuracy.
 5. Short test audio exports require `/voice-summary start allow-test-audio:true` before participant consent, followed by `/voice-summary test seconds:30 audio:true`. This explicitly posts WAV clips to the same channel for comparison. Exports and posted transcripts remain on Discord until deleted. Do not enable test audio exports when they are not wanted.
 
@@ -117,20 +135,20 @@ Only the configured owner (`OWNER_DISCORD_ID`) and members with **Manage Nicknam
 Use `/nickname member:@Ali name:Raja Tidur` for a private acknowledgment, or ask through `/ask`/a direct bot mention:
 
 ```text
-@RainBot tolong tukar nickname @Ali jadi "Raja Tidur"
-@JarvisAI bah bolehkan kalau kau tukar nama @Ali kepada Raja Tidur
-@RainBot rename @Ali to "Raja Tidur"
+@Hujan tolong tukar nickname @Ali jadi "Raja Tidur"
+@HujanAI bah bolehkan kalau kau tukar nama @Ali kepada Raja Tidur
+@Hujan rename @Ali to "Raja Tidur"
 ```
 
-Select real Discord mentions for your bot and the target member. Chat requests need one explicitly mentioned target and one exact nickname after `to`, `kepada` or `jadi`; quotes are optional. Sabahan courtesy openings such as `bah bolehkan kalau kau` are supported. Jarvis cannot pick a different member/name, rename someone from quoted context or previous history, or act on a hypothetical/negative request. For other phrasing, use `/nickname`. Names must contain 1–32 characters without control characters or line breaks.
+Select real Discord mentions for your bot and the target member. Chat requests need one explicitly mentioned target and one exact nickname after `to`, `kepada` or `jadi`; quotes are optional. Sabahan courtesy openings such as `bah bolehkan kalau kau` are supported. Hujan cannot pick a different member/name, rename someone from quoted context or previous history, or act on a hypothetical/negative request. For other phrasing, use `/nickname`. Names must contain 1–32 characters without control characters or line breaks.
 
-RainBot needs **Manage Nicknames**, and its highest role must be above the target’s highest role, following [Discord’s permission hierarchy](https://docs.discord.com/developers/topics/permissions#permission-hierarchy). The server owner cannot be renamed by a bot. Other moderators must also outrank their target, except when changing their own nickname; the configured bot owner is explicitly authorized but still subject to the bot’s Discord hierarchy limits. Current actor/bot permissions, member roles and configured access restrictions are fetched again immediately before an action.
+Hujan needs **Manage Nicknames**, and its highest role must be above the target’s highest role, following [Discord’s permission hierarchy](https://docs.discord.com/developers/topics/permissions#permission-hierarchy). The server owner cannot be renamed by a bot. Other moderators must also outrank their target, except when changing their own nickname; the configured bot owner is explicitly authorized but still subject to the bot’s Discord hierarchy limits. Current actor/bot permissions, member roles and configured access restrictions are fetched again immediately before an action.
 
 Chat requests provide one exact function capability to the worker. A completed AI function call is validated against it, then the frontend performs only a nickname PATCH and returns a confirmed application result. No model-written “done” message triggers a change. Duplicate worker calls share the same action promise; durable frontend event claims prevent replayed actions after restart. Slash nickname changes do not require AI availability. A four-request action queue and two-second per-member cooldown bound direct action load.
 
 The result is acknowledged only after Discord confirms the requested nickname. Successful changes show the requester, target member and new nickname publicly in the requesting channel. Public AI/mention replies carry this confirmation themselves; `/nickname` and private `/ask` also post one public confirmation after completing their private acknowledgment. Mentions are displayed without pinging members. Failed, replayed and already-set requests do not post an announcement. If posting fails after the rename succeeds, the private result explains that the name changed but its announcement could not be posted. An interrupted/failed request can have an uncertain result; check the member’s current nickname before sending a new request. Discord’s audit reason records the requesting member and source event. An AI private answer does not make the resulting server nickname private.
 
-RainBot needs View Channel, Send Messages, Read Message History, Attach Files and Embed Links for the full chat experience; Connect and Speak for ambience. Enable **Message Content Intent on RainBot’s Bot page** in Discord Developer Portal to read selected ordinary messages through REST. The gateway deliberately subscribes only to Guilds, GuildMessages and GuildVoiceStates; bot mentions arrive through Discord’s mention exception. No channel-history sweep is performed. Voice recording occurs only after the explicit voice-summary setup and participant consent above.
+Hujan needs View Channel, Send Messages, Read Message History, Attach Files and Embed Links for the full chat experience; Connect and Speak for ambience. Enable **Message Content Intent on Hujan’s Bot page** in Discord Developer Portal to read selected ordinary messages through REST. The gateway deliberately subscribes only to Guilds, GuildMessages and GuildVoiceStates; bot mentions arrive through Discord’s mention exception. No channel-history sweep is performed. Voice recording occurs only after the explicit voice-summary setup and participant consent above.
 
 ## Access, personality and context
 
@@ -138,9 +156,9 @@ AI settings preserve server access, configured AI guild/channel/role restriction
 
 Only the server owner, members with Administrator/Manage Server, or `CONTROLLER_ROLE_IDS` can change sleep sessions. Ordinary members may use permitted AI commands and view sleep status. AI output cannot execute voice controls: members use the deterministic `/sleep` commands themselves.
 
-History is isolated by guild, channel, requesting member and public/private visibility. Context includes that member’s earlier Jarvis questions/answers and an explicitly selected same-channel reply chain; it does not ingest their ordinary channel messages. A direct attachment takes priority over a referenced image. Another member’s referenced image is analyzed but is not reposted. Image bytes and download URLs are not retained in history. Public output and supplied context are sent to the existing connected AI account; everyone shares its allowance.
+History is isolated by guild, channel, requesting member and public/private visibility. Context includes that member’s earlier Hujan questions/answers and an explicitly selected same-channel reply chain; it does not ingest their ordinary channel messages. A direct attachment takes priority over a referenced image. Another member’s referenced image is analyzed but is not reposted. Image bytes and download URLs are not retained in history. Public output and supplied context are sent to the existing connected AI account; everyone shares its allowance.
 
-Web search is optional: Jarvis uses supplied text, images, references and history first, then searches when missing public facts are needed. Having context does not prohibit searching; having no context does not force it. The existing OAuth subscription adapter is preserved, with no paid API-key fallback.
+Web search is optional: Hujan uses supplied text, images, references and history first, then searches when missing public facts are needed. Having context does not prohibit searching; having no context does not force it. The existing OAuth subscription adapter is preserved, with no paid API-key fallback.
 
 ## Architecture and failure behavior
 
@@ -204,8 +222,8 @@ See `PROJECT_STATE.md` for the deployment snapshot, test count, current caveats 
 ## Rollback
 
 1. Verify and stop the combined frontend and worker. Confirm both PIDs are gone before touching locks. Preserve a consistent backup of the **current** combined databases and encrypted credential blob first.
-2. Copy the newest `data/ai/chatgpt.dpapi` and `host-id` back to the original Jarvis `data/` under the same Windows account. OAuth refresh rotation may make the pre-cutover original credential stale. Do not decrypt or paste it. To retain post-cutover chats/sleep changes, use a consistent SQLite backup to the original state paths while all consumers are stopped; otherwise explicitly choose the pre-cutover snapshots and accept losing newer state.
-3. Restore the recorded pre-cutover guild commands. The exact snapshot path is recorded as `preCutoverCommandBackup` in `data/deployment.json`. Preview with `node --env-file=.env --import tsx scripts/restore-commands.ts <snapshot-path>`, then add `--apply` during rollback. It upserts saved definitions and removes only the newly added AI command names absent from that snapshot, preserving unrelated commands/global scopes. The original Jarvis application’s commands were never modified.
-4. Start one original sleep instance from `E:\Projects\2026Projject\DiscordSleepBot` and one original Jarvis from its original folder. Verify their working directories, Discord identities and ownership. Do not start the combined runtime alongside them.
+2. Copy the newest `data/ai/chatgpt.dpapi` and `host-id` back to the original assistant project's `data/` under the same Windows account. OAuth refresh rotation may make the pre-cutover original credential stale. Do not decrypt or paste it. To retain post-cutover chats/sleep changes, use a consistent SQLite backup to the original state paths while all consumers are stopped; otherwise explicitly choose the pre-cutover snapshots and accept losing newer state.
+3. Restore the recorded pre-cutover guild commands. The exact snapshot path is recorded as `preCutoverCommandBackup` in `data/deployment.json`. Preview with `node --env-file=.env --import tsx scripts/restore-commands.ts <snapshot-path>`, then add `--apply` during rollback. It upserts saved definitions and removes only the newly added AI command names absent from that snapshot, preserving unrelated commands/global scopes. The original assistant application’s commands were never modified.
+4. Start one original sleep instance from `E:\Projects\2026Projject\DiscordSleepBot` and one original assistant bot from its original folder. Verify their working directories, Discord identities and ownership. Do not start the combined runtime alongside them.
 
 Neither original project’s application code is modified by this integration. Runtime snapshots and encrypted copied grants are private and should not be redistributed.

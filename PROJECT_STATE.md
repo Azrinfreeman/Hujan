@@ -1,6 +1,12 @@
-# Combined Jarvis + Sleep Companion — Project State
+# Hujan — Project State
 
-Last updated: **29 October 2026 (MYT, UTC+08:00)**.
+Last updated: **6 November 2026 (MYT, UTC+08:00)**.
+
+## Latest checkpoint — project renamed to Hujan
+
+The owner chose **Hujan** (Malay for "rain") as the product name and approved `PROJECT_RENAMING_IMPLEMENTATION.md` with "proceed". Renamed the product across package/build metadata (`hujan`, `hujan-desktop`, `HujanSetup.exe`), the Windows profile path (`%LOCALAPPDATA%\Hujan`), the `hujan://` app scheme and Electron bridge, environment keys (`HUJAN_STATE_ROOT`, `HUJAN_RESOURCE_ROOT`), the dashboard/desktop UI titles and tray, Discord-facing error strings, and the AI persona. The in-chat persona now defaults to **Hujan** and answers to its current Discord display name, so a server-given nickname is honored. Active docs (`README.md`, `DESIGN.md`, `WINDOWS_APP.md`) and `PERSONALITY.md`/`PERSONALITY.example.md` were updated, and the README now leads with portfolio-facing feature and engineering sections; historical checkpoints below are left as-written as the record. Existing pre-rename desktop installs keep using their `%LOCALAPPDATA%\RainBot` folder (saved credentials and the downloaded speech model carry over) until a `%LOCALAPPDATA%\Hujan` folder exists.
+
+Validation: TypeScript check and **233/233 tests** passed, including a new `tests/app-paths.test.ts` covering the fresh, legacy and renamed profile paths. Rebuilt `desktop/out/make/squirrel.windows/x64/HujanSetup.exe`: **275,366,912 bytes**, **NotSigned**, SHA-256 `74E5FC2347DC5BCFC62AB5C62F188A9186E933566980B53D52179B50B40DB06F`; the packaged backend contains no pre-rename names except the intentional legacy-folder fallback. `scripts/desktop-build.mjs` now strips an ambient `npm_config_allow_scripts` policy so the production install is reproducible. The dev-mode Electron smoke could not run in this environment (an Electron ESM module-resolution error unrelated to the rename); the package build succeeded and the scheme/bridge paths are covered by passing unit tests. The Discord application display name/avatar and GitHub repo name remain owner-side (developer portal / repository settings). No production bot restart, provider inference, or command registration was performed.
 
 ## Latest checkpoint ? ChatGPT model selector and Windows installer, version 0.3.3
 

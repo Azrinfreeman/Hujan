@@ -8,7 +8,7 @@ import { SettingsStore } from '../src/settings.js';
 import { OwnerSessions } from '../src/dashboard/sessions.js';
 
 async function fixture(run: (context: {call: ReturnType<typeof client>; settings: SettingsStore; origin: string; sessions: OwnerSessions; calls: string[]}) => Promise<void>) {
-  const root=mkdtempSync(join(tmpdir(),'rainbot-admin-'));
+  const root=mkdtempSync(join(tmpdir(),'hujan-admin-'));
   const settings=new SettingsStore(root,{},(value,decrypt) => decrypt ? Buffer.from(value,'base64').toString() : Buffer.from(value).toString('base64'));
   const sessions=new OwnerSessions(); const calls: string[]=[];
   const server=createDashboardServer(join(root,'missing-status.json'),{settings,sessions,request:async input => {

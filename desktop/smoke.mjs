@@ -21,9 +21,9 @@ export async function runSmoke({window,request,stateRoot,focus,tray}) {
   const painted=()=>js('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
   await wait('document.getElementById("settings-form").hidden === false && document.getElementById("bot-control").textContent.includes("Complete setup")');
   console.log('Desktop smoke: window and controller ready.');
-  assert.equal(await js('typeof window.rainbot.authSwitch'),'function');
-  assert.equal(await js('typeof window.rainbot.voiceSummaryStatus'),'function');
-  assert.equal(await js('typeof window.rainbot.localSpeechSetup'),'function');
+  assert.equal(await js('typeof window.hujan.authSwitch'),'function');
+  assert.equal(await js('typeof window.hujan.voiceSummaryStatus'),'function');
+  assert.equal(await js('typeof window.hujan.localSpeechSetup'),'function');
   assert.equal((await request('settings')).values.VOICE_SUMMARY_PROVIDER,'local');
   assert.equal((await request('localSpeechStatus')).state,'missing');
   assert.equal((await request('settings')).values.VOICE_SUMMARY_ENABLED,'false');
@@ -32,8 +32,8 @@ export async function runSmoke({window,request,stateRoot,focus,tray}) {
   assert.equal(await js('document.getElementById("settings-form").elements.namedItem("VOICE_SUMMARY_API_KEY").type'),'password');
   assert.equal(await js('document.getElementById("switch-chatgpt").textContent'),'Use a different ChatGPT account');
   assert.equal(await js('typeof require'),'undefined');
-  assert.equal(await js('typeof window.rainbot.exec'),'undefined');
-  assert.equal(await js('typeof window.rainbot.request'),'undefined');
+  assert.equal(await js('typeof window.hujan.exec'),'undefined');
+  assert.equal(await js('typeof window.hujan.request'),'undefined');
   await js('location.hash="overview";navigate();document.getElementById("main").focus();document.dispatchEvent(new KeyboardEvent("keydown",{key:"/",bubbles:true}))');
   await wait('location.hash === "#commands" && document.activeElement.id === "command-search"');
   assert.equal(await js('document.getElementById("page-commands").hidden'),false);

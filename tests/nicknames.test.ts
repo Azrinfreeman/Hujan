@@ -81,8 +81,8 @@ test('owner and authorized moderator can rename; ordinary members and changed pe
 test('bot permission, bot/actor hierarchy, server owner and guild scope are checked before patching',async()=>{
   const cases:[(s:ReturnType<typeof fixture>['state'])=>void,RegExp][]=[
     [s=>{s.botManage=false;},/needs the Manage Nicknames/],
-    [s=>{s.botPosition=s.targetPosition;},/Move RainBot/],
-    [s=>{s.manageable=false;},/Move RainBot/],
+    [s=>{s.botPosition=s.targetPosition;},/Move Hujan/],
+    [s=>{s.manageable=false;},/Move Hujan/],
     [s=>{s.actorPosition=s.targetPosition;},/below your highest role/],
     [s=>{s.guildOwner=targetId;},/server owner/],
   ];

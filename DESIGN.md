@@ -1,8 +1,8 @@
-# RainBot interface contract
+# Hujan interface contract
 
-RainBot shows its owner the bot's actual condition and the next available action. Commands are references to copy into Discord; they are never represented as controls that have already run.
+Hujan shows its owner the bot's actual condition and the next available action. Commands are references to copy into Discord; they are never represented as controls that have already run.
 
-The browser dashboard and Electron renderer share `src/dashboard/public`. All five views use this contract and the same CSS tokens. Keep the RainBot name, rain mark, hash navigation, and light/dark preference.
+The browser dashboard and Electron renderer share `src/dashboard/public`. All five views use this contract and the same CSS tokens. Keep the Hujan name, rain mark, hash navigation, and light/dark preference.
 
 ## Tokens
 

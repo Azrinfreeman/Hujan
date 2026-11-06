@@ -7,7 +7,7 @@ import { request } from 'node:http';
 import { createDashboardServer, readRuntimeStatus } from '../src/dashboard/server.js';
 
 async function fixture(run: (path: string) => Promise<void>) {
-  const dir = await mkdtemp(join(tmpdir(), 'rainbot-dashboard-'));
+  const dir = await mkdtemp(join(tmpdir(), 'hujan-dashboard-'));
   try { await run(join(dir, 'status.json')); }
   finally { await rm(dir, { recursive: true, force: true }); }
 }

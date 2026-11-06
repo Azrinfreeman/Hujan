@@ -78,7 +78,7 @@ try {
   worker.start();
   try { control = await startRuntimeControl({ revision:process.env.BOT_CONFIG_REVISION ?? 'legacy', workerPid:() => worker.workerPid, shutdown }); }
   catch {
-    if(process.env.RAINBOT_RESOURCE_ROOT)throw new UserError('The local control channel could not start. No Discord connection was opened. Check local ownership and permissions.');
+    if(process.env.HUJAN_RESOURCE_ROOT)throw new UserError('The local control channel could not start. No Discord connection was opened. Check local ownership and permissions.');
     console.error('Local Start/Stop control is unavailable. Use the bot terminal for shutdown.');
   }
   bot.once(Events.ClientReady,async () => {

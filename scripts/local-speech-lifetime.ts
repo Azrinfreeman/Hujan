@@ -5,7 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { LocalSpeechEngine } from '../src/voice-summary/local-engine.js';
 import { safeError, UserError } from '../src/errors.js';
 
-const root=join(process.env.LOCALAPPDATA!,'RainBot');
+const root=join(process.env.LOCALAPPDATA!,'Hujan');
 if(process.argv.includes('--child')) {
   const engine=new LocalSpeechEngine(root,'vulkan');
   try {await engine.start(AbortSignal.timeout(120000));process.send?.({endpoint:engine.endpoint});}

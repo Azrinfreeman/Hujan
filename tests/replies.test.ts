@@ -85,14 +85,14 @@ test('aborting a reference read stops generation and delivery', async () => {
   }, controller.signal), { name: 'AbortError' });
 });
 
-const namedScope = { ...scope, botId: 'jarvis', botName: 'Jarvis', userId: 'requester', userName: 'Melon' };
+const namedScope = { ...scope, botId: 'hujan', botName: 'Hujan', userId: 'requester', userName: 'Melon' };
 
-test('tagged reply context identifies Jarvis and the requester and reads at most two linked earlier replies', async () => {
+test('tagged reply context identifies Hujan and the requester and reads at most two linked earlier replies', async () => {
   const targets: Record<string, ReplyTarget> = {
-    original: { id: 'original', channelId: 'channel', content: 'Why is Jarvis talking in English?',
+    original: { id: 'original', channelId: 'channel', content: 'Why is Hujan talking in English?',
       author: { id: 'other', name: 'Friend' }, reference: { messageId: 'english' } },
     english: { id: 'english', channelId: 'channel', content: 'Sure, here is the explanation.',
-      author: { id: 'jarvis', name: 'Jarvis', bot: true }, reference: { messageId: 'request' } },
+      author: { id: 'hujan', name: 'Hujan', bot: true }, reference: { messageId: 'request' } },
     request: { id: 'request', channelId: 'channel', content: 'Please explain in English.',
       author: { id: 'requester', name: 'Melon' }, reference: { messageId: 'older' } },
   };
@@ -101,8 +101,8 @@ test('tagged reply context identifies Jarvis and the requester and reads at most
     assert.equal(channel, 'channel'); calls.push(id); return targets[id]!;
   }, signal()));
   assert.deepEqual(calls, ['original', 'english', 'request']);
-  assert.equal(context.assistant.name, 'Jarvis');
-  assert.equal(context.selected_message.text, 'Why is Jarvis talking in English?');
+  assert.equal(context.assistant.name, 'Hujan');
+  assert.equal(context.selected_message.text, 'Why is Hujan talking in English?');
   assert.equal(context.selected_message.speaker, 'another member');
   assert.equal(context.earlier_replies_newest_first[0].speaker, 'assistant (you)');
   assert.equal(context.earlier_replies_newest_first[1].speaker, 'requesting member');
@@ -167,11 +167,11 @@ test('contextual explanations receive the requester own earlier questions and an
       store.append(conversationKey(other), 'Unrelated secret question', 'Unrelated secret answer');
     }
     await chat.ask(identity, 'explain', async () => {}, { reference: abort => referencedConversation(reference, namedScope,
-      async () => ({ id: 'original', channelId: 'channel', content: 'Why is Jarvis talking in English?', author: { id: 'other', name: 'Friend' } }), abort) });
+      async () => ({ id: 'original', channelId: 'channel', content: 'Why is Hujan talking in English?', author: { id: 'other', name: 'Friend' } }), abort) });
     assert.deepEqual(inputs[0]!.slice(0, 2), [
       { role: 'user', content: 'Explain this in English please.' }, { role: 'assistant', content: 'Sure, here is the explanation.' },
     ]);
-    assert.ok(String(inputs[0]![2]!.content).includes('Why is Jarvis talking in English?'));
+    assert.ok(String(inputs[0]![2]!.content).includes('Why is Hujan talking in English?'));
     assert.ok(!JSON.stringify(inputs[0]).includes('Unrelated secret'));
     assert.equal(store.get(conversationKey(identity)).at(-1)!.content, 'Ko minta English tadi bah.');
   } finally { chat.close(); store.close(); }

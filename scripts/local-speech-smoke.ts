@@ -3,14 +3,14 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { LocalSpeechEngine } from '../src/voice-summary/local-engine.js';
 import { transcribeLocal } from '../src/voice-summary/local-transcription.js';
 import { wav } from '../src/voice-summary/transcription.js';
-import { stateRoot } from '../src/app-paths.js';
+import { stateRoot, desktopStateRoot } from '../src/app-paths.js';
 import { safeError, UserError } from '../src/errors.js';
 import OpusScript from 'opusscript';
 import { voiceConfig } from '../src/voice-summary/config.js';
 import { transcribeSnapshot } from '../src/voice-summary/speech-client.js';
 import { releaseSnapshot, type VoiceSnapshot } from '../src/voice-summary/buffer.js';
 
-const root=process.argv.includes('--desktop')?join(process.env.LOCALAPPDATA!,'RainBot'):stateRoot;
+const root=process.argv.includes('--desktop')?desktopStateRoot():stateRoot;
 const device=process.argv.includes('--cpu')?'cpu':'vulkan';
 const engine=new LocalSpeechEngine(root,device);const started=performance.now();
 const pipeline=process.argv.includes('--pipeline');

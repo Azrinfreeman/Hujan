@@ -8,7 +8,7 @@ import { SettingsStore } from '../src/settings.js';
 // Reversible test codec; production always uses CurrentUser DPAPI.
 const codec = (value: string, decrypt = false) => decrypt ? Buffer.from(value,'base64').toString() : Buffer.from(value).toString('base64');
 function fixture(run: (store: SettingsStore) => void) {
-  const root=mkdtempSync(join(tmpdir(),'rainbot-settings-'));
+  const root=mkdtempSync(join(tmpdir(),'hujan-settings-'));
   try { run(new SettingsStore(root,{},codec)); } finally { rmSync(root,{recursive:true,force:true}); }
 }
 

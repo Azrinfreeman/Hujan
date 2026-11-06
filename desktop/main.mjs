@@ -2,7 +2,7 @@ import { app, BrowserWindow, Menu, Tray, dialog, ipcMain, protocol, session, she
 import squirrelStartup from 'electron-squirrel-startup';
 import { spawn } from 'node:child_process';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -10,17 +10,18 @@ import { appURL, validSender, validateRequest, resourcePath, authURL } from './s
 
 const here=dirname(fileURLToPath(import.meta.url));
 const resources=app.isPackaged ? process.resourcesPath : join(here,'.stage');
-const smoke=!app.isPackaged && process.argv.includes('--rainbot-smoke');
+const smoke=!app.isPackaged && process.argv.includes('--hujan-smoke');
+const appData=process.env.LOCALAPPDATA || join(app.getPath('home'),'AppData','Local');
 const stateRoot=smoke ? join(here,'../output/desktop-smoke',`profile-${randomUUID()}`)
-  : join(process.env.LOCALAPPDATA || join(app.getPath('home'),'AppData','Local'),'RainBot');
+  : (existsSync(join(appData,'Hujan')) || !existsSync(join(appData,'RainBot')) ? join(appData,'Hujan') : join(appData,'RainBot'));
 if(!squirrelStartup){mkdirSync(join(stateRoot,'desktop-profile'),{recursive:true});app.setPath('userData',join(stateRoot,'desktop-profile'));}
 let window, tray, controller, quitting=false, importSelection, active=0;
 const pending=new Map();
 const csp="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
-protocol.registerSchemesAsPrivileged([{scheme:'rainbot',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
+protocol.registerSchemesAsPrivileged([{scheme:'hujan',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 
 function request(operation,argument={}) {
-  if (!controller?.connected) return Promise.reject(new Error('The desktop controller is unavailable. Reopen RainBot.'));
+  if (!controller?.connected) return Promise.reject(new Error('The desktop controller is unavailable. Reopen Hujan.'));
   if (pending.size >= 32) return Promise.reject(new Error('Too many requests. Wait for the current operation.'));
   const id=randomUUID();
   return new Promise((resolve,reject)=>{
@@ -43,7 +44,7 @@ async function stopAndQuit() {
       if (result.status !== 'completed') throw new Error(result.message || 'Shutdown is not verified.');
     }
     quitting=true;app.quit();
-  } catch(error) {focus();await dialog.showMessageBox(window,{type:'error',message:'RainBot could not stop',detail:error.message});}
+  } catch(error) {focus();await dialog.showMessageBox(window,{type:'error',message:'Hujan could not stop',detail:error.message});}
   finally {active--;}
 }
 async function updateTray() {
@@ -51,7 +52,7 @@ async function updateTray() {
   let state;
   try {state=await request('management');} catch {state={state:'blocked'};}
   tray.setContextMenu(Menu.buildFromTemplate([
-    {label:'Open RainBot',click:focus},{type:'separator'},
+    {label:'Open Hujan',click:focus},{type:'separator'},
     {label:'Start bot',enabled:state.state === 'stopped' && !state.missing?.length,click:()=>void request('start').catch(showError)},
     {label:'Stop bot',enabled:state.state === 'running',click:()=>void request('stop').catch(showError)},
     {type:'separator'},
@@ -59,11 +60,11 @@ async function updateTray() {
     {label:'Stop bot and quit',click:()=>void stopAndQuit()},
   ]));
 }
-function showError(error) {focus();void dialog.showMessageBox(window,{type:'error',message:'RainBot needs attention',detail:error.message});}
+function showError(error) {focus();void dialog.showMessageBox(window,{type:'error',message:'Hujan needs attention',detail:error.message});}
 async function startController() {
   const env={};
   for (const key of ['SystemRoot','SYSTEMROOT','WINDIR','PATH','Path','PATHEXT','TEMP','TMP','USERPROFILE','APPDATA','LOCALAPPDATA']) if(process.env[key] !== undefined) env[key]=process.env[key];
-  env.RAINBOT_STATE_ROOT=stateRoot;env.RAINBOT_RESOURCE_ROOT=join(resources,'backend');
+  env.HUJAN_STATE_ROOT=stateRoot;env.HUJAN_RESOURCE_ROOT=join(resources,'backend');
   // Launch standalone Node directly; Electron's disabled RunAsNode fuse also blocks its fork wrapper.
   controller=spawn(join(resources,'node/node.exe'),[join(resources,'backend/src/desktop/controller.js')],{
     cwd:stateRoot,env,windowsHide:true,shell:false,
@@ -80,9 +81,9 @@ async function startController() {
     if (message.error) call.reject(new Error(message.error));else call.resolve(message.value);
   });
   const failed=()=>{
-    for (const call of pending.values()) {clearTimeout(call.timer);call.reject(new Error('The desktop controller exited. Reopen RainBot.'));}pending.clear();
+    for (const call of pending.values()) {clearTimeout(call.timer);call.reject(new Error('The desktop controller exited. Reopen Hujan.'));}pending.clear();
     if(!quitting) {
-      const error=new Error('The desktop controller exited. The bot may still be running; reopen RainBot to reconnect.');
+      const error=new Error('The desktop controller exited. The bot may still be running; reopen Hujan to reconnect.');
       if(smoke)console.error(error);else showError(error);
     }
   };
@@ -94,7 +95,7 @@ if (squirrelStartup) {quitting=true;app.quit();}
 else if (!app.requestSingleInstanceLock()) {quitting=true;app.quit();}
 else {
   app.on('second-instance',focus);
-  app.setAppUserModelId('com.squirrel.RainBot.RainBot');
+  app.setAppUserModelId('com.squirrel.Hujan.Hujan');
   app.on('window-all-closed',()=>{});
   app.on('before-quit',event=>{
     if (!quitting) {event.preventDefault();focus();return;}
@@ -108,16 +109,16 @@ else {
   session.defaultSession.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
   session.defaultSession.setPermissionCheckHandler(()=>false);
   session.defaultSession.on('will-download',event=>event.preventDefault());
-  protocol.handle('rainbot',async req=>{
+  protocol.handle('hujan',async req=>{
     const path=resourcePath(req.url,join(resources,'ui'));
     if(!path || req.method !== 'GET')return new Response('Not found',{status:404});
     const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png'};
     try {return new Response(await readFile(path),{headers:{'Content-Type':types[path.slice(path.lastIndexOf('.'))] || 'application/octet-stream','Content-Security-Policy':csp,'X-Content-Type-Options':'nosniff','Cache-Control':'no-store'}});}
-    catch {return new Response('Unable to load RainBot',{status:500});}
+    catch {return new Response('Unable to load Hujan',{status:500});}
   });
   await startController();
-  window=new BrowserWindow({title:'RainBot',width:1280,height:850,minWidth:760,minHeight:560,show:false,
-    icon:join(resources,'ui/rainbot.png'),backgroundColor:'#f5f7fb',
+  window=new BrowserWindow({title:'Hujan',width:1280,height:850,minWidth:760,minHeight:560,show:false,
+    icon:join(resources,'ui/hujan.png'),backgroundColor:'#f5f7fb',
     webPreferences:{preload:join(here,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,devTools:!app.isPackaged,spellcheck:false},
   });
   Menu.setApplicationMenu(null);
@@ -135,18 +136,18 @@ else {
     event.preventDefault();window.hide();
     if(!explainedClose){
       explainedClose=true;
-      tray.displayBalloon({title:'RainBot is in the system tray',content:'Open RainBot or quit it from the tray menu. Closing the window keeps your bot running.'});
+      tray.displayBalloon({title:'Hujan is in the system tray',content:'Open Hujan or quit it from the tray menu. Closing the window keeps your bot running.'});
       void writeFile(join(stateRoot,'desktop-ui.json'),JSON.stringify({explainedClose:true})).catch(()=>{});
     }
   });
   window.on('query-session-end',()=>{quitting=true;});
-  window.webContents.on('render-process-gone',()=>{if(!quitting){focus();void dialog.showMessageBox(window,{type:'error',message:'The RainBot window stopped responding.',detail:'Reopen the app to reconnect. The bot is managed separately.'});}});
-  ipcMain.handle('rainbot',async(event,operation,argument)=>{
+  window.webContents.on('render-process-gone',()=>{if(!quitting){focus();void dialog.showMessageBox(window,{type:'error',message:'The Hujan window stopped responding.',detail:'Reopen the app to reconnect. The bot is managed separately.'});}});
+  ipcMain.handle('hujan',async(event,operation,argument)=>{
     if(!validSender(event,window))throw new Error('Unsupported desktop sender.');
     validateRequest(operation,argument);
     if(operation === 'importSelect') {
       importSelection=undefined;
-      const selected=await dialog.showOpenDialog(window,{title:'Select existing RainBot project',properties:['openDirectory']});
+      const selected=await dialog.showOpenDialog(window,{title:'Select existing Hujan project',properties:['openDirectory']});
       if(selected.canceled)return {cancelled:true};
       const source=selected.filePaths[0];const preview=await request('importPreview',{source});
       importSelection={source,ticket:randomUUID(),at:Date.now()};return {...preview,ticket:importSelection.ticket};
@@ -158,8 +159,8 @@ else {
     }
     return request(operation,argument);
   });
-  const image=nativeImage.createFromPath(join(resources,'ui/rainbot.png'));
-  tray=new Tray(image.resize({width:20,height:20}));tray.setToolTip('RainBot');tray.on('double-click',focus);tray.on('right-click',()=>void updateTray());
+  const image=nativeImage.createFromPath(join(resources,'ui/hujan.png'));
+  tray=new Tray(image.resize({width:20,height:20}));tray.setToolTip('Hujan');tray.on('double-click',focus);tray.on('right-click',()=>void updateTray());
   void updateTray();
   const timer=setInterval(()=>void updateTray(),10000);timer.unref();
   await window.loadURL(appURL);window.show();
@@ -168,5 +169,5 @@ else {
     catch(error){console.error(error);await writeFile(join(stateRoot,'../failure.png'),(await window.webContents.capturePage()).toPNG());quitting=true;controller?.disconnect();app.exit(1);}
     finally {quitting=true;app.quit();}
   }
-  }).catch(error=>{console.error('RainBot startup failed:',error);quitting=true;app.exit(1);});
+  }).catch(error=>{console.error('Hujan startup failed:',error);quitting=true;app.exit(1);});
 }

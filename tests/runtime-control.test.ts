@@ -11,7 +11,7 @@ import { once } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 
 test('authenticated named-pipe control accepts identity/shutdown and rejects forged requests',async () => {
-  const root=mkdtempSync(join(tmpdir(),'rainbot-pipe-')); const secret='a'.repeat(64); let shutdown=0;
+  const root=mkdtempSync(join(tmpdir(),'hujan-pipe-')); const secret='a'.repeat(64); let shutdown=0;
   let stopped!: () => void;
   const accepted = new Promise<void>(resolve => { stopped=resolve; });
   const control=await startRuntimeControl({root,revision:'fixture-revision',secret,workerPid:() => undefined,
@@ -39,7 +39,7 @@ test('Windows metadata inspection identifies a real process without exposing its
 });
 
 test('real supervisor starts a disposable frontend/worker, reconnects, and stops both cooperatively', {timeout:180000}, async () => {
-  const root=mkdtempSync(join(tmpdir(),'rainbot-real-lifecycle-'));
+  const root=mkdtempSync(join(tmpdir(),'hujan-real-lifecycle-'));
   const secret='c'.repeat(64); let child: ChildProcess | undefined;
   try {
     mkdirSync(join(root,'assets')); mkdirSync(join(root,'src/integration'),{recursive:true});

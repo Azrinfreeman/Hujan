@@ -27,7 +27,7 @@ import {runtimeLock} from ${moduleURL('vault.js')};
 import {SettingsStore} from ${moduleURL('settings.js')};
 import {startRuntimeControl} from ${moduleURL('integration/runtime-control.js')};
 const release=runtimeLock(join(process.cwd(),'data/frontend/123456789012345678'));
-const worker=fork(join(process.env.RAINBOT_RESOURCE_ROOT,'src/integration/ai-worker.js'),[],{execArgv:[],windowsHide:true,stdio:['ignore','ignore','ignore','ipc']});
+const worker=fork(join(process.env.HUJAN_RESOURCE_ROOT,'src/integration/ai-worker.js'),[],{execArgv:[],windowsHide:true,stdio:['ignore','ignore','ignore','ipc']});
 await once(worker,'message');let stopping;
 const shutdown=()=>stopping??=(async()=>{const ended=once(worker,'exit');worker.send('stop');await ended;control.close();release();process.exit(0);})();
 const control=await startRuntimeControl({revision:new SettingsStore().effective().revision,workerPid:()=>worker.pid,shutdown});
@@ -37,7 +37,7 @@ let controller;
 const pending=new Map();
 function connect() {
   const env={};for(const key of ['SystemRoot','SYSTEMROOT','WINDIR','PATH','Path','TEMP','TMP','USERPROFILE','APPDATA','LOCALAPPDATA'])if(process.env[key] !== undefined)env[key]=process.env[key];
-  Object.assign(env,{RAINBOT_STATE_ROOT:state,RAINBOT_RESOURCE_ROOT:code,SLEEP_ASSET_DIR:join(backend,'assets')});
+  Object.assign(env,{HUJAN_STATE_ROOT:state,HUJAN_RESOURCE_ROOT:code,SLEEP_ASSET_DIR:join(backend,'assets')});
   controller=fork(join(backend,'src/desktop/controller.js'),[],{execPath:executable,execArgv:[],cwd:state,env,windowsHide:true,serialization:'json',stdio:['ignore','ignore','inherit','ipc']});
   controller.on('message',reply=>{const p=pending.get(reply.id);if(!p)return;clearTimeout(p.timer);pending.delete(reply.id);if(reply.error)p.reject(new Error(reply.error));else p.resolve(reply.value);});
   controller.on('exit',()=>{for(const p of pending.values()){clearTimeout(p.timer);p.reject(new Error('Controller exited during a request.'));}pending.clear();});

@@ -21,7 +21,7 @@ export function nicknameIntent(prompt: string): NicknameRequest | undefined {
   if (members.length!==1) return;
   // "Bolehkan kalau kau ..." is a courtesy request. Strip only this bounded
   // opening; actual conditions elsewhere still cannot authorize an action.
-  const direct=prompt.replace(/^\s*(?:(?:please|tolong|minta|bah|jarvis|can you|could you|boleh(?:kan|kah)?(?:\s+kalau\s+(?:kau|ko|kamu)|\s+(?:kau|ko|kamu))?)[,:]?\s+)*/i,'');
+  const direct=prompt.replace(/^\s*(?:(?:please|tolong|minta|bah|hujan|can you|could you|boleh(?:kan|kah)?(?:\s+kalau\s+(?:kau|ko|kamu)|\s+(?:kau|ko|kamu))?)[,:]?\s+)*/i,'');
   const match=direct.match(/^(?:rename|nickname|(?:change|set|tukar(?:kan)?|ubah(?:kan)?|ganti(?:kan)?)\s+(?:the\s+)?(?:nickname|nick|name|username|nama))\s+(?:(?:of|for)\s+)?<@!?(\d{17,20})>\s+(?:to|kepada|jadi|menjadi|as)\s+(.+?)\s*$/i);
   if (!match) return;
   const literal=match[2]!;
