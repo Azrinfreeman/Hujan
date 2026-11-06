@@ -39,7 +39,7 @@ export async function transcribeAudio(audio:Buffer, settings:{key:string;model:s
   const body=new FormData(); body.set('file',new Blob([new Uint8Array(audio)],{type:'audio/wav'}),'speech.wav');
   body.set('model',settings.model); body.set('response_format','json');
   for (const language of settings.languages) body.append('languages[]',language);
-  if (settings.glossary) body.set('prompt',`Malay conversation, possibly mixed with English. Relevant names and terms: ${settings.glossary}`);
+  if (settings.glossary) body.set('prompt',`Conversation in these languages (codes): ${settings.languages.join(', ')}; speakers may mix them. Relevant names and terms: ${settings.glossary}`);
   const response=await request('https://api.openai.com/v1/audio/transcriptions',{
     method:'POST',headers:{Authorization:`Bearer ${settings.key}`},body,signal,redirect:'error',
   });

@@ -43,7 +43,8 @@ Desktop state lives under `%LOCALAPPDATA%\Hujan`:
 | `data/sleep` | Saved voice sessions |
 | `data/frontend` | Frontend ownership locks and nickname event database |
 | `data/bot.stdout.log`, `data/bot.stderr.log` | Local runtime diagnostics |
-| `PERSONALITY.md` | Optional owner personality, read on subsequent requests |
+| `PERSONALITY.md` | Live personality text, read on subsequent requests; set it in Settings > Personality |
+| `data/dashboard/personality.json` | Selected personality template and your saved custom text |
 | `desktop-profile` | Electron window profile, local theme and browser cache |
 
 Installed application files and audio assets are separate and read-only during normal operation. The installer is built from an allowlisted staging directory and excludes the source project's `.env`, protected grants, settings, databases, logs, backups, and personal `PERSONALITY.md`.

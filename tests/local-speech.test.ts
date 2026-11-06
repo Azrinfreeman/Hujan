@@ -95,3 +95,28 @@ test('an old readiness poll cannot overwrite an active setup and cancellation wa
   assert.equal((await stale).state,'downloading');assert.equal((await setup.status()).state,'downloading');
   setup.cancel();assert.equal(cleaned,false);await setup.wait();assert.equal(cleaned,true);assert.equal((await setup.status()).state,'failed');
 });
+
+test('local model catalog is pinned, selectable and validated, and the default keeps its existing path',async()=>{
+  const { localModels, localModelPath, localModelInfo, localModelUrl, defaultLocalModel, modelReady, engineReady } = await import('../src/voice-summary/local-setup.js');
+  const { voiceConfig } = await import('../src/voice-summary/config.js');
+  const { validateValues } = await import('../src/settings.js');
+  assert.equal(defaultLocalModel,'large-v3-q5_0');
+  assert.equal(localModelInfo('large-v3-q5_0')!.hash,'d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1');
+  for (const model of localModels) {
+    assert.match(model.hash,/^[a-f\d]{64}$/);assert.ok(model.bytes>1e7);
+    assert.match(localModelUrl(model.id),/^https:\/\/huggingface\.co\/ggerganov\/whisper\.cpp\/resolve\/5359861c739e955e79d9a303bcbc70fb988958b1\/ggml-[a-z0-9._-]+\.bin$/);
+  }
+  const root=mkdtempSync(join(tmpdir(),'local-models-'));
+  try {
+    assert.match(localModelPath(root),/model\.bin$/);assert.match(localModelPath(root,'small-q5_1'),/models.small-q5_1\.bin$/);
+    assert.equal(await modelReady(root,'small-q5_1'),false);assert.equal(await modelReady(root,'nope'),false);assert.equal(await engineReady(root),false);
+    const setup=new LocalSpeechSetup(root);
+    setup.select('medium-q5_0');assert.equal((await setup.status()).model,'medium-q5_0');
+    assert.throws(()=>setup.select('unknown'),/listed/);
+  } finally {rmSync(root,{recursive:true,force:true});}
+  assert.equal(voiceConfig({VOICE_SUMMARY_LOCAL_MODEL:'small-q5_1'}).model,'small-q5_1');
+  assert.equal(voiceConfig({}).model,'large-v3-q5_0');
+  assert.throws(()=>voiceConfig({VOICE_SUMMARY_LOCAL_MODEL:'../evil'}),/Invalid/);
+  assert.doesNotThrow(()=>validateValues({VOICE_SUMMARY_LOCAL_MODEL:'base-q5_1'}));
+  assert.throws(()=>validateValues({VOICE_SUMMARY_LOCAL_MODEL:'huge'}),/listed/);
+});

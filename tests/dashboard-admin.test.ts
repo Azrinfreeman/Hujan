@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDashboardServer } from '../src/dashboard/server.js';
@@ -94,4 +94,25 @@ test('authorized mutation requests are rate limited without launching a process'
   for (let i=0;i<30;i++) assert.equal((await call('/api/bot/start','POST',{pid:0})).status,400);
   assert.equal((await call('/api/bot/start','POST',{})).status,429);
   assert.equal(existsSync(join(settings.directory,'supervisor.json')),false);
+}));
+
+test('personality endpoints require a session, apply immediately, and reject stale or oversized requests',async () => fixture(async ({call,sessions,origin,settings}) => {
+  assert.equal((await call('/api/personality')).status,401);
+  await call('/api/session','POST',{code:sessions.accessCode()});
+  const initial=await call('/api/personality');
+  assert.equal(initial.status,200);assert.equal(initial.value.preset,'casual-ms');assert.equal(initial.value.applied,false);
+  assert.ok(initial.value.presets.some((item: {id:string}) => item.id==='sabah-roast'));
+  assert.equal((await call('/api/personality','PUT',{preset:'custom',text:'Hello.',revision:initial.value.revision},{'X-CSRF-Token':'wrong'})).status,403);
+  assert.equal((await call('/api/personality','PUT',{preset:'custom',text:'Hello.',revision:initial.value.revision},{Origin:'https://elsewhere.example'})).status,403);
+  assert.equal(existsSync(join(settings.root,'PERSONALITY.md')),false);
+  assert.equal((await call('/api/personality','PUT',{preset:'custom',text:'Hello.',revision:initial.value.revision,extra:true})).status,400);
+  const saved=await call('/api/personality','PUT',{preset:'custom',text:'Be a calm pirate.',revision:initial.value.revision});
+  assert.equal(saved.status,200);assert.equal(saved.value.preset,'custom');assert.equal(saved.value.applied,true);
+  assert.equal(readFileSync(join(settings.root,'PERSONALITY.md'),'utf8').trim(),'Be a calm pirate.');
+  assert.equal((await call('/api/personality','PUT',{preset:'custom',text:'Stale.',revision:initial.value.revision})).status,400);
+  assert.equal((await call('/api/personality','PUT',{preset:'custom',text:'x'.repeat(8001),revision:saved.value.revision})).status,400);
+  const huge=await call('/api/personality','PUT',{preset:'custom',text:'x'.repeat(60000),revision:saved.value.revision});
+  assert.equal(huge.status,413);
+  assert.equal(readFileSync(join(settings.root,'PERSONALITY.md'),'utf8').trim(),'Be a calm pirate.');
+  assert.ok(origin);
 }));

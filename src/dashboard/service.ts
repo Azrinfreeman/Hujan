@@ -6,7 +6,8 @@ import { BotSupervisor } from './supervisor.js';
 import { apiModels, OpenAIProvider } from '../openai-provider.js';
 import { reasoningEffort } from '../config.js';
 import { UserError } from '../errors.js';
-import { LocalSpeechSetup } from '../voice-summary/local-setup.js';
+import { LocalSpeechSetup, defaultLocalModel, localModelIds } from '../voice-summary/local-setup.js';
+import { PersonalityStore } from '../personality-presets.js';
 
 export async function readVoiceSummaryStatus(path: string, now = Date.now()) {
   const off = { state:'off', coverageSeconds:0, participants:0, model:'', message:'Voice listening is off.', usageSeconds:0 };
@@ -35,11 +36,22 @@ export class DashboardService {
   private testing = false;
   private lastTest = 0;
   readonly localSpeech: LocalSpeechSetup;
+  readonly personality: PersonalityStore;
   constructor(readonly settings = new SettingsStore(), readonly supervisor = new BotSupervisor(settings), private request = fetch) {
     this.localSpeech = new LocalSpeechSetup(settings.root);
+    this.personality = new PersonalityStore(settings.root);
   }
-  localSpeechStatus() { return this.localSpeech.status(); }
-  localSpeechSetup() { return this.localSpeech.begin(); }
+  personalityState() { return this.personality.state(); }
+  savePersonality(body: unknown) {
+    if (!isRecord(body) || Object.keys(body).some(key => !['preset','text','revision'].includes(key))) throw new UserError('Invalid personality request.');
+    return this.supervisor.exclusive(() => this.personality.apply(body));
+  }
+  private selectLocalModel() {
+    const saved = this.settings.effective().env.VOICE_SUMMARY_LOCAL_MODEL;
+    this.localSpeech.select(saved && localModelIds.includes(saved) ? saved : defaultLocalModel);
+  }
+  localSpeechStatus() { this.selectLocalModel(); return this.localSpeech.status(); }
+  localSpeechSetup() { this.selectLocalModel(); return this.localSpeech.begin(); }
   localSpeechCancel() { return this.localSpeech.cancel(); }
   save(body: unknown) { return this.supervisor.exclusive(() => this.settings.update(body)); }
   voiceSummaryStatus() { return readVoiceSummaryStatus(resolve(this.settings.root, 'data/voice-summary-status.json')); }

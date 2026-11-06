@@ -2,7 +2,15 @@
 
 Last updated: **6 November 2026 (MYT, UTC+08:00)**.
 
-## Latest checkpoint — project renamed to Hujan
+## Latest checkpoint — selectable personality and local speech-model choice
+
+The bot's personality is now selectable in the dashboard under **Settings → Personality**, instead of being fixed to the Sabah Malay roast. Five reviewed templates ship in `assets/personalities/`: Casual Malay (default), Friendly assistant, Professional and concise, Witty and playful, and Sabah Malay roast (marked mature). Owners can also write custom text up to 8,000 characters. Saving writes `PERSONALITY.md` atomically, applies from the next reply without a restart, keeps custom text when switching templates, recognises hand edits as Custom, and uses a revision check so a stale tab cannot overwrite a newer choice. `src/personality-presets.ts` implements the store, `/api/personality` (GET/PUT) exposes it, and `scripts/desktop-build.mjs` copies the templates into the packaged backend.
+
+The same release adds a **Speech model** selector for local voice summaries (Large v3, Large v3 Turbo, Medium, Small, Base) with per-model checksum verification, plus a **Language preset** that fills expected language codes and the summary language. `VOICE_SUMMARY_LOCAL_MODEL` is validated against the listed IDs.
+
+Validation: TypeScript check clean and **241/241 tests** passed, including new `tests/personality-presets.test.ts` and updated dashboard/voice-settings coverage. Rebuilt `desktop/out/make/squirrel.windows/x64/HujanSetup.exe`: **275,377,664 bytes**, **NotSigned**, SHA-256 `9788A1EAD278DA3B230E68B53EFAB7B4773BBC6A5CEFA216B9DCD8764C9F72EA`. The packaged backend contains `src/personality-presets.js` and all five template files. `README.md`, `WINDOWS_APP.md`, and `.env.example` document the new settings. The installer is built locally and is not yet attached to a GitHub release. No production bot restart, provider inference, or command registration was performed.
+
+## Previous checkpoint — project renamed to Hujan
 
 The owner chose **Hujan** (Malay for "rain") as the product name and approved the rename with "proceed". Renamed the product across package/build metadata (`hujan`, `hujan-desktop`, `HujanSetup.exe`), the Windows profile path (`%LOCALAPPDATA%\Hujan`), the `hujan://` app scheme and Electron bridge, environment keys (`HUJAN_STATE_ROOT`, `HUJAN_RESOURCE_ROOT`), the dashboard/desktop UI titles and tray, Discord-facing error strings, and the AI persona. The in-chat persona now defaults to **Hujan** and answers to its current Discord display name, so a server-given nickname is honored. Active docs (`README.md`, `DESIGN.md`, `WINDOWS_APP.md`) and `PERSONALITY.md`/`PERSONALITY.example.md` were updated, and the README now leads with portfolio-facing feature and engineering sections; historical checkpoints below are left as-written as the record. Existing pre-rename desktop installs keep using their `%LOCALAPPDATA%\RainBot` folder (saved credentials and the downloaded speech model carry over) until a `%LOCALAPPDATA%\Hujan` folder exists.
 

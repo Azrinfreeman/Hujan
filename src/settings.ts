@@ -5,12 +5,13 @@ import { parseEnv } from 'node:util';
 import { createHash, randomUUID } from 'node:crypto';
 import { protect } from './secret-protection.js';
 import { UserError } from './errors.js';
+import { localModelIds } from './voice-summary/local-setup.js';
 
 export const projectRoot = stateRoot;
 export const valueKeys = ['DISCORD_APPLICATION_ID','DISCORD_GUILD_ID','OWNER_DISCORD_ID','ACCESS_MODE',
   'ALLOWED_CHANNEL_IDS','ALLOWED_ROLE_IDS','CONTROLLER_ROLE_IDS','RAIN_VOLUME','AI_PROVIDER',
   'CHATGPT_MODEL','CHATGPT_REASONING_EFFORT','OPENAI_MODEL','OPENAI_REASONING_EFFORT','OPENAI_WEB_SEARCH',
-  'VOICE_SUMMARY_ENABLED','VOICE_SUMMARY_CONSENT_MODE','VOICE_SUMMARY_PROVIDER','VOICE_SUMMARY_LOCAL_DEVICE','VOICE_SUMMARY_MODEL','VOICE_SUMMARY_LANGUAGES','VOICE_SUMMARY_GLOSSARY',
+  'VOICE_SUMMARY_ENABLED','VOICE_SUMMARY_CONSENT_MODE','VOICE_SUMMARY_PROVIDER','VOICE_SUMMARY_LOCAL_DEVICE','VOICE_SUMMARY_LOCAL_MODEL','VOICE_SUMMARY_MODEL','VOICE_SUMMARY_LANGUAGES','VOICE_SUMMARY_GLOSSARY',
   'VOICE_SUMMARY_MINUTES','VOICE_SUMMARY_MONTHLY_MINUTES','VOICE_SUMMARY_LANGUAGE'] as const;
 export const secretKeys = ['DISCORD_BOT_TOKEN','OPENAI_API_KEY','VOICE_SUMMARY_API_KEY'] as const;
 const pathKeys = ['AI_DATA_DIR','SLEEP_DATABASE_PATH','SLEEP_ASSET_DIR','RAIN_ASSET_PATH','SUNNY_ASSET_PATH'] as const;
@@ -22,7 +23,7 @@ export type SettingsUpdate = { revision: string; values: Partial<Values>; secret
 const defaults: Values = { DISCORD_APPLICATION_ID:'', DISCORD_GUILD_ID:'', OWNER_DISCORD_ID:'', ACCESS_MODE:'owner',
   ALLOWED_CHANNEL_IDS:'', ALLOWED_ROLE_IDS:'', CONTROLLER_ROLE_IDS:'', RAIN_VOLUME:'0.2', AI_PROVIDER:'chatgpt',
   CHATGPT_MODEL:'', CHATGPT_REASONING_EFFORT:'', OPENAI_MODEL:'', OPENAI_REASONING_EFFORT:'', OPENAI_WEB_SEARCH:'false',
-  VOICE_SUMMARY_ENABLED:'false', VOICE_SUMMARY_CONSENT_MODE:'individual', VOICE_SUMMARY_PROVIDER:'local', VOICE_SUMMARY_LOCAL_DEVICE:'vulkan', VOICE_SUMMARY_MODEL:'gpt-transcribe', VOICE_SUMMARY_LANGUAGES:'ms,en',
+  VOICE_SUMMARY_ENABLED:'false', VOICE_SUMMARY_CONSENT_MODE:'individual', VOICE_SUMMARY_PROVIDER:'local', VOICE_SUMMARY_LOCAL_DEVICE:'vulkan', VOICE_SUMMARY_LOCAL_MODEL:'large-v3-q5_0', VOICE_SUMMARY_MODEL:'gpt-transcribe', VOICE_SUMMARY_LANGUAGES:'ms,en',
   VOICE_SUMMARY_GLOSSARY:'', VOICE_SUMMARY_MINUTES:'5', VOICE_SUMMARY_MONTHLY_MINUTES:'60', VOICE_SUMMARY_LANGUAGE:'Malay' };
 export const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const ownKeys = (value: Record<string, unknown>, allowed: readonly string[]) => Object.keys(value).every(key => allowed.includes(key));
@@ -43,6 +44,7 @@ export function validateValues(values: Partial<Values>) {
     if (key === 'VOICE_SUMMARY_CONSENT_MODE' && !['individual','server'].includes(value)) throw new UserError('Choose individual consent or prior server-wide consent.');
     if (key === 'VOICE_SUMMARY_PROVIDER' && !['local','openai'].includes(value)) throw new UserError('Choose a supported transcription provider.');
     if (key === 'VOICE_SUMMARY_LOCAL_DEVICE' && !['vulkan','cpu'].includes(value)) throw new UserError('Choose Vulkan or CPU for local transcription.');
+    if (key === 'VOICE_SUMMARY_LOCAL_MODEL' && !localModelIds.includes(value)) throw new UserError('Choose a listed local transcription model.');
     if (key === 'VOICE_SUMMARY_MODEL' && !value) throw new UserError('Enter a transcription model identifier.');
     if (key === 'VOICE_SUMMARY_MINUTES' && !['4','5'].includes(value)) throw new UserError('Voice summary window must be 4 or 5 minutes.');
     if (key === 'VOICE_SUMMARY_MONTHLY_MINUTES' && (!/^[1-9]\d{0,4}$/.test(value) || Number(value) > 10000)) throw new UserError('Monthly transcription allowance must be an integer from 1 to 10000 minutes.');

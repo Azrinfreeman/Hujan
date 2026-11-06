@@ -51,14 +51,14 @@ export async function readRuntimeStatus(path = resolve(root, 'data/runtime-statu
 }
 
 class HttpError extends UserError { constructor(readonly status: number, message: string) { super(message); } }
-function jsonBody(req: IncomingMessage): Promise<unknown> {
+function jsonBody(req: IncomingMessage, limit = 16384): Promise<unknown> {
   if (req.headers['content-type'] !== 'application/json') throw new HttpError(415,'Use a JSON request.');
   return new Promise((resolve,reject) => {
     let buffer = ''; let bytes = 0;
     const timer = setTimeout(() => reject(new HttpError(408,'The request timed out.')),5000);
     req.on('data',chunk => {
       bytes += chunk.length;
-      if (bytes > 16384) { buffer=''; clearTimeout(timer); reject(new HttpError(413,'The request is too large.')); }
+      if (bytes > limit) { buffer=''; clearTimeout(timer); reject(new HttpError(413,'The request is too large.')); }
       else buffer += chunk.toString('utf8');
     });
     req.on('end',() => { clearTimeout(timer); try { resolve(JSON.parse(buffer)); } catch { reject(new HttpError(400,'Invalid JSON request.')); } });
@@ -113,6 +113,8 @@ export function createDashboardServer(statusPath?: string, options: { settings?:
           else if (++rate.count > 30) throw new HttpError(429,'Too many changes. Wait a minute before trying again.');
         }
         if (path === '/api/settings' && read) { json(200,settings.view()); return; }
+        if (path === '/api/personality' && read) { json(200,service.personalityState()); return; }
+        if (path === '/api/personality' && req.method === 'PUT') { json(200,await service.savePersonality(await jsonBody(req,49152))); return; }
         if (path === '/api/voice-summary/local' && read) { json(200,await service.localSpeechStatus()); return; }
         if (['/api/voice-summary/local/setup','/api/voice-summary/local/cancel'].includes(path) && req.method === 'POST') {
           emptyRequest(await jsonBody(req));

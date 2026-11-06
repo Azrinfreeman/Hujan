@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { availableParallelism } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { localDirectory, localReady, nativeEnvironment } from './local-setup.js';
+import { defaultLocalModel, localDirectory, localModelPath, localReady, nativeEnvironment } from './local-setup.js';
 import { resourceRoot } from '../app-paths.js';
 import { UserError } from '../errors.js';
 
@@ -25,16 +25,16 @@ export class LocalSpeechEngine {
   private startup='';
   private ready=false;
   private aborted?:()=>void;
-  constructor(readonly root:string,readonly device:'cpu'|'vulkan') {}
+  constructor(readonly root:string,readonly device:'cpu'|'vulkan',readonly model:string=defaultLocalModel) {}
   get endpoint() {return `http://127.0.0.1:${this.port}${this.prefix}/inference`;}
   async start(signal:AbortSignal) {
     signal.throwIfAborted();
-    if(!await localReady(this.root,true))throw new UserError('Local speech files are missing or invalid. Use Set up local transcription in Settings.');
+    if(!await localReady(this.root,true,this.model))throw new UserError('Local speech files are missing or invalid. Use Set up local transcription in Settings.');
     signal.throwIfAborted();this.port=await freePort();this.prefix=`/${randomUUID()}`;
     const directory=localDirectory(this.root);
     const child=spawn(join(process.env.SystemRoot||'C:/Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),[
       '-NoProfile','-NonInteractive','-File',join(resourceRoot,'scripts/local-speech-host.ps1'),'-EngineDirectory',directory,
-      '-ModelPath',join(directory,'model.bin'),'-Port',String(this.port),'-RequestPath',this.prefix,'-Device',this.device,
+      '-ModelPath',localModelPath(this.root,this.model),'-Port',String(this.port),'-RequestPath',this.prefix,'-Device',this.device,
       '-Threads',String(Math.max(1,Math.min(8,availableParallelism()-2))),
     ],{windowsHide:true,env:nativeEnvironment(directory),stdio:'pipe',shell:false});
     this.child=child;

@@ -207,6 +207,7 @@ let setupBusy = false;
 let chatgptConnected = false;
 const removedSecrets = new Set();
 const form = $('settings-form');
+let personalityData;
 const secretFields = ['DISCORD_BOT_TOKEN','OPENAI_API_KEY','VOICE_SUMMARY_API_KEY'];
 const modelChoice = $('chatgpt-model-choice');
 const modelInput = $('chatgpt-model');
@@ -230,7 +231,7 @@ const fieldLabels = { DISCORD_BOT_TOKEN:'Bot token',DISCORD_APPLICATION_ID:'Appl
   OWNER_DISCORD_ID:'Owner ID',ACCESS_MODE:'Access mode',ALLOWED_CHANNEL_IDS:'Allowed channel IDs',ALLOWED_ROLE_IDS:'Allowed role IDs',
   CONTROLLER_ROLE_IDS:'Sleep controller role IDs',RAIN_VOLUME:'Volume',AI_PROVIDER:'Provider',CHATGPT_MODEL:'ChatGPT model',
   CHATGPT_REASONING_EFFORT:'ChatGPT reasoning',OPENAI_MODEL:'API model',OPENAI_REASONING_EFFORT:'API reasoning',OPENAI_WEB_SEARCH:'Web search',OPENAI_API_KEY:'API key',
-  VOICE_SUMMARY_ENABLED:'Voice summaries',VOICE_SUMMARY_CONSENT_MODE:'Voice consent',VOICE_SUMMARY_PROVIDER:'Transcription provider',VOICE_SUMMARY_LOCAL_DEVICE:'Local device',VOICE_SUMMARY_API_KEY:'Speech API key',VOICE_SUMMARY_MODEL:'Transcription model',
+  VOICE_SUMMARY_ENABLED:'Voice summaries',VOICE_SUMMARY_CONSENT_MODE:'Voice consent',VOICE_SUMMARY_PROVIDER:'Transcription provider',VOICE_SUMMARY_LOCAL_DEVICE:'Local device',VOICE_SUMMARY_LOCAL_MODEL:'Speech model',VOICE_SUMMARY_API_KEY:'Speech API key',VOICE_SUMMARY_MODEL:'Transcription model',
   VOICE_SUMMARY_LANGUAGES:'Expected languages',VOICE_SUMMARY_GLOSSARY:'Voice glossary',VOICE_SUMMARY_MINUTES:'Summary window',
   VOICE_SUMMARY_MONTHLY_MINUTES:'Monthly transcription allowance',VOICE_SUMMARY_LANGUAGE:'Summary language' };
 function friendly(message) { return String(message).replace(/[A-Z][A-Z_]+/g, key => fieldLabels[key] || key); }
@@ -249,6 +250,8 @@ function setAuthorized(token) {
   csrf = token;
   $('settings-locked').hidden = !!token;
   form.hidden = !token;
+  $('personality-panel').hidden = !token;
+  if (!token) personalityData = undefined;
   if (!token) {
     settingsData = undefined; management = undefined;
     form.reset(); removedSecrets.clear(); settingsDirty = false;
@@ -341,13 +344,94 @@ function renderSettings(data) {
     input.title=input.disabled ? 'Managed by the deployment environment' : '';
     $(id).textContent=data.secrets[key] ? data.overridden.includes(key) ? 'Configured externally' : 'Configured' : 'Not configured';
   }
-  renderModelChoice();
+  renderModelChoice(); syncVoiceLanguagePreset();
   $('settings-summary').textContent=data.missing.length ? `Complete setup: ${data.missing.map(key => fieldLabels[key] || key).join(', ')}.` : 'Saved settings apply on the next start.';
   markDirty();
 }
+
+const personalityText = () => $('personality-text');
+function personalityDraft() { return { preset: $('personality-preset').value, text: personalityText().value }; }
+function personalityDirty() {
+  if (!personalityData) return false;
+  const draft = personalityDraft();
+  return draft.preset !== personalityData.preset || draft.text.trim() !== personalityData.text.trim();
+}
+function personalityFeedback(message, error = false) {
+  const box = $('personality-feedback'); box.textContent = message; box.classList.toggle('error', error); box.hidden = !message;
+}
+function renderPersonalityControls() {
+  if (!personalityData) return;
+  const draft = personalityDraft(), none = draft.preset === 'none';
+  const template = personalityData.presets.find(item => item.id === draft.preset);
+  const length = personalityText().value.length, over = length > personalityData.max;
+  $('personality-count').textContent = `${length} / ${personalityData.max}`;
+  $('personality-count').classList.toggle('over', over);
+  personalityText().disabled = none;
+  $('personality-description').textContent = template ? template.description : none ? 'The bot uses only its built-in instructions: no special tone or language.' : 'Your own text. Describe the language, tone and manner you want.';
+  $('personality-example').textContent = template ? `Example: \u201c${template.example}\u201d` : '';
+  const dirty = personalityDirty();
+  const message = template?.mature ? 'Rude and sarcastic style. Check that it suits your community before saving.'
+    : personalityData.externalEdit && !dirty ? 'PERSONALITY.md was edited outside the dashboard. Showing its current text; saving replaces it.'
+    : !personalityData.applied && !dirty ? 'Not applied yet. Save to start using this personality.' : '';
+  const notice = $('personality-notice'); notice.textContent = message; notice.hidden = !message;
+  $('personality-state').textContent = dirty ? 'Unsaved changes' : personalityData.applied ? 'Applied' : 'Not applied';
+  $('personality-state').className = `badge ${dirty || !personalityData.applied ? 'warning' : ''}`;
+  $('personality-save').disabled = over || (!dirty && personalityData.applied) || (draft.preset !== 'none' && !personalityText().value.trim());
+  $('personality-discard').disabled = !dirty;
+}
+function renderPersonality(data) {
+  personalityData = data;
+  const select = $('personality-preset'); select.replaceChildren();
+  const add = (value, label) => { const option = document.createElement('option'); option.value = value; option.textContent = label; select.append(option); };
+  for (const item of data.presets) add(item.id, item.mature ? `${item.title} (mature)` : item.title);
+  add('custom', 'Custom'); add('none', 'No personality');
+  select.value = data.preset; personalityText().value = data.text;
+  renderPersonalityControls();
+}
+async function loadPersonality() {
+  if (!csrf) return;
+  try { renderPersonality(await adminRequest('/api/personality')); personalityFeedback(''); }
+  catch (error) { personalityFeedback(error.message, true); }
+}
+$('personality-preset').addEventListener('change', () => {
+  const value = $('personality-preset').value;
+  const template = personalityData?.presets.find(item => item.id === value);
+  if (template) personalityText().value = template.text;
+  else if (value === 'custom') personalityText().value = personalityData.customText || (personalityData.preset === 'custom' ? personalityData.text : personalityText().value);
+  else if (value === 'none') personalityText().value = '';
+  renderPersonalityControls();
+});
+$('personality-text').addEventListener('input', () => {
+  const select = $('personality-preset');
+  const template = personalityData?.presets.find(item => item.id === select.value);
+  if (select.value === 'none' || template && personalityText().value.trim() !== template.text) select.value = 'custom';
+  renderPersonalityControls();
+});
+$('personality-discard').addEventListener('click', () => { if (personalityData) { renderPersonality(personalityData); personalityFeedback(''); } });
+$('personality-save').addEventListener('click', async () => {
+  if (!personalityData) return;
+  $('personality-save').disabled = true; personalityFeedback('');
+  try {
+    renderPersonality(await adminRequest('/api/personality', 'PUT', { ...personalityDraft(), revision: personalityData.revision }));
+    personalityFeedback('Personality saved. It applies from the next reply.');
+  } catch (error) { personalityFeedback(error.message, true); renderPersonalityControls(); }
+});
+const voiceLanguagePresets = { 'ms-en': ['ms,en', 'Malay'], 'en': ['en', 'English'], 'zh-en': ['zh,en', 'Chinese'], 'id-en': ['id,en', 'Indonesian'] };
+function syncVoiceLanguagePreset() {
+  const codes = $('voice-summary-languages').value.trim(), language = $('voice-summary-language').value.trim();
+  const match = Object.entries(voiceLanguagePresets).find(([, value]) => value[0] === codes && value[1] === language);
+  $('voice-language-preset').value = match ? match[0] : 'custom';
+}
+$('voice-language-preset').addEventListener('change', () => {
+  const preset = voiceLanguagePresets[$('voice-language-preset').value];
+  if (!preset) return;
+  $('voice-summary-languages').value = preset[0]; $('voice-summary-language').value = preset[1];
+  $('voice-summary-languages').dispatchEvent(new Event('input', { bubbles: true }));
+});
+for (const id of ['voice-summary-languages', 'voice-summary-language']) $(id).addEventListener('input', syncVoiceLanguagePreset);
 async function loadSettings() {
   if (!csrf) return;
-  try { renderSettings(await adminRequest('/api/settings')); void refreshVoiceSummary(); void refreshLocalSpeech(); }
+  try { renderSettings(await adminRequest('/api/settings')); void refreshVoiceSummary(); void refreshLocalSpeech(); void loadPersonality(); }
   catch(error) { settingsFeedback(error.message,true); }
 }
 function settingsFeedback(message, error = false) {
@@ -380,13 +464,15 @@ let localSpeechEpoch=0;
 function renderLocalSpeech() {
   const status=localSpeechStatus;
   const downloading=status?.state === 'downloading';
-  $('local-speech-setup').disabled=!csrf || localSpeechRequest || downloading || status?.state === 'ready';
+  const pendingModel=!!settingsData && $('voice-summary-local-model').value !== settingsData.values.VOICE_SUMMARY_LOCAL_MODEL;
+  $('local-speech-setup').disabled=!csrf || localSpeechRequest || downloading || status?.state === 'ready' || pendingModel;
+  $('local-model-help').dataset.pending=pendingModel ? 'true' : '';
   $('local-speech-cancel').hidden=!downloading;
   $('local-speech-cancel').disabled=localSpeechRequest;
   $('local-speech-progress').hidden=!downloading;
   const progress=Number.isFinite(status?.progress) ? Math.max(0,Math.min(100,status.progress)) : 0;
   $('local-speech-progress').value=progress;
-  $('local-speech-status').textContent=status
+  $('local-speech-status').textContent=pendingModel ? 'Save settings first, then download the newly chosen model.' : status
     ? [status.message, downloading ? `${Math.round(progress)}%` : '', status.state === 'ready' ? status.model : ''].filter(Boolean).join(' - ')
     : 'Checking local transcription...';
 }

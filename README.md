@@ -1,10 +1,10 @@
 # Hujan
 
-Hujan (Malay for "rain") is a self-hosted Discord companion: an AI assistant with a roasting Sabah Malay personality, rain and sleep ambience, consent-gated local voice summaries, and a Windows desktop app — all through one Discord connection. AI inference, image conversion and DPAPI credential work run in a supervised child process.
+Hujan (Malay for "rain") is a self-hosted Discord companion: an AI assistant with a selectable personality (casual Malay by default; English, professional, playful, Sabah roast, or your own text), rain and sleep ambience, consent-gated local voice summaries, and a Windows desktop app — all through one Discord connection. AI inference, image conversion and DPAPI credential work run in a supervised child process.
 
 ## Features
 
-- **AI assistant with a personality** — ask questions, explain a selected message, or attach a screenshot. A tool-calling layer lets the model rename server members via `/nickname` or a plain mention. Runs on an existing ChatGPT subscription or an OpenAI API key.
+- **AI assistant with a personality you choose** — ask questions, explain a selected message, or attach a screenshot. Pick one of five built-in styles or write your own text in the dashboard; changes apply on the next reply with no restart. A tool-calling layer lets the model rename server members via `/nickname` or a plain mention. Runs on an existing ChatGPT subscription or an OpenAI API key.
 - **Rain and sleep ambience** — `/sleep join mode:rain|sunny|silent`, scene styles, and thunder, streamed to a voice channel from local PCM.
 - **Local voice summaries** — consent-gated, speaker-separated capture of a rolling five-minute window, transcribed offline with Whisper `large-v3-q5_0` on Vulkan/CPU, then summarized in the channel's own text chat. No per-minute API charge, with Malay WER/CER evaluation built in.
 - **Windows desktop app** — an Electron app with a system tray, Start/Stop, protected settings, and a bundled Node runtime (no system Node needed).
@@ -16,7 +16,8 @@ Hujan (Malay for "rain") is a self-hosted Discord companion: an AI assistant wit
 - **Credential protection** — Discord and AI credentials are encrypted with Windows DPAPI and stored as versioned revisions with atomic replacement and rollback.
 - **Deterministic tool safety** — one exact function capability per request; a completed call is validated before any Discord mutation runs.
 - **Durable delivery** — SQLite event claims and mention nonces prevent replayed actions after a restart.
-- **Verified** — `233/233` automated tests and a clean TypeScript check; the desktop app is exercised through Electron smoke and packaged-runtime checks.
+- **Personality you can edit safely** — five reviewed templates plus free text, length/character validated, written atomically to `PERSONALITY.md` with an optimistic revision check; the dashboard keeps your custom text when you switch templates and recognises hand edits.
+- **Verified** — `241/241` automated tests and a clean TypeScript check; the desktop app is exercised through Electron smoke and packaged-runtime checks.
 
 The sections below cover operations: how to run it, self-hosting, Discord commands, voice-summary consent, storage, maintenance, and rollback.
 
@@ -104,7 +105,7 @@ AI replies are typed, including in voice-channel text chat. Optional voice trans
 
 ### Voice summaries and Malay transcript review (experimental)
 
-In **Settings → Voice summaries**, choose **Local** (the default) and **Set up local transcription**. Setup downloads and verifies the speech engine and multilingual Whisper `large-v3-q5_0` model, about 1.1 GB, once per profile. No speech API key or Python/CUDA installation is needed. Enable the feature, save, and restart the bot. Vulkan uses compatible GPUs, including the tested AMD RX 6600 XT; choose CPU explicitly if Vulkan is unavailable. Recognition is local; summaries still send the transcript to the selected text AI provider, with no web search, nickname tools, or ordinary chat history. This does not make text summarization fully offline.
+In **Settings → Voice summaries**, choose **Local** (the default) and **Set up local transcription**. Setup downloads and verifies the speech engine and multilingual Whisper `large-v3-q5_0` model, about 1.1 GB, once per profile. No speech API key or Python/CUDA installation is needed. Enable the feature, save, and restart the bot. Vulkan uses compatible GPUs, including the tested AMD RX 6600 XT; choose CPU explicitly if Vulkan is unavailable. Recognition is local; summaries still send the transcript to the selected text AI provider, with no web search, nickname tools, or ordinary chat history. This does not make text summarization fully offline. You can also pick a smaller Whisper model (Large v3 Turbo, Medium, Small or Base) under **Speech model**; save settings, then press Set up to download it. Smaller models are faster and lighter but less accurate, especially for Malay and mixed languages. Each model is checksum-verified before use. A **Language preset** fills the expected language codes and summary language (Malay + English, English, Mandarin + English, Indonesian + English, or custom).
 
 The optional **OpenAI API** transcription provider preserves the previous `gpt-transcribe` path and requires its own protected speech key. Switching providers never silently falls back or overwrites the saved cloud key/model. Provider changes apply after restarting; a fresh listening session announces the actual destination before anyone consents.
 
@@ -152,7 +153,13 @@ Hujan needs View Channel, Send Messages, Read Message History, Attach Files and 
 
 ## Access, personality and context
 
-AI settings preserve server access, configured AI guild/channel/role restrictions, **gpt-6-luna / reasoning high**, context-first optional web search and the existing sarcastic Sabah personality. Edit this project’s `PERSONALITY.md`; changes are read on the next request. Editing the original project’s personality does not update this copy.
+AI settings preserve server access, configured AI guild/channel/role restrictions, **gpt-6-luna / reasoning high** and context-first optional web search.
+
+### Personality
+
+Choose the bot's personality in the dashboard under **Settings → Personality**. Built-in templates are Casual Malay (default), Friendly assistant, Professional and concise, Witty and playful, and Sabah Malay roast (marked mature, so check it suits your community). You can also paste or write any text of your own, up to 8,000 characters.
+
+Saving applies from the next reply with no restart. The chosen text is written to `PERSONALITY.md` in the state folder, which you can still edit by hand; the dashboard detects a hand edit, shows it as Custom, and keeps your own text when you switch templates. Templates live in `assets/personalities/` and the dashboard never modifies them. Concurrent saves use a revision check, so a stale browser tab cannot silently overwrite a newer choice. Editing the original project's personality does not update this copy.
 
 Only the server owner, members with Administrator/Manage Server, or `CONTROLLER_ROLE_IDS` can change sleep sessions. Ordinary members may use permitted AI commands and view sleep status. AI output cannot execute voice controls: members use the deterministic `/sleep` commands themselves.
 

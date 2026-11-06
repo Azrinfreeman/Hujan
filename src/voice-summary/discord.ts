@@ -71,7 +71,7 @@ export class VoiceCommands {
       if(capture.state!=='off')throw new UserError('Stop the current listening session before starting another.');
       this.busy=true;
       try {
-        if(this.service.config.provider==='local' && !await localReady(this.service.root))throw new UserError('Use Set up local transcription in Settings before starting a local listening session.');
+        if(this.service.config.provider==='local' && !await localReady(this.service.root,false,this.service.config.model))throw new UserError('Use Set up local transcription in Settings before starting a local listening session.');
         const existing=this.sessions.getConnection(interaction.guildId!);
         if(!existing) await this.sessions.join(interaction.guild,channel,'silent');
         const connection=this.sessions.getConnection(interaction.guildId!);

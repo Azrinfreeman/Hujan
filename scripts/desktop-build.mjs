@@ -45,6 +45,8 @@ for(const file of ['inspect-runtime.ps1','process-directory.ps1','local-speech-e
 const audio=['rain-loop.pcm','rain-soft-loop.pcm','rain-indoor-loop.pcm','rain-glass-loop.pcm','rain-heavy-loop.pcm','sunny-birds-loop.pcm','thunder-distant-a.pcm','thunder-distant-b.pcm','thunder-distant-c.pcm','thunder-distant-d.pcm'];
 await mkdir(join(backend,'assets'),{recursive:true});
 for(const file of audio)await copyFile(join(root,'assets',file),join(backend,'assets',file));
+await mkdir(join(backend,'assets/personalities'),{recursive:true});
+for(const file of await readdir(join(root,'assets/personalities')))if(file.endsWith('.md'))await copyFile(join(root,'assets/personalities',file),join(backend,'assets/personalities',file));
 await writeFile(join(backend,'PERSONALITY.template.md'),'Be helpful, professional and concise. Use the language of the person asking.\n');
 for(const file of ['index.html','app.js','styles.css','transport.js'])await copyFile(join(root,'src/dashboard/public',file),join(ui,file));
 // Keep the optional recovery dashboard complete in the staged backend, too.

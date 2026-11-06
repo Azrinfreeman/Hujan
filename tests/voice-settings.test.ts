@@ -26,7 +26,7 @@ const snapshot = () => ({at:new Date().toISOString(),stopped:false,state:'listen
 test('voice defaults are disabled, bounded, and independent of the text provider', async () => fixture(settings => {
   const view = settings.view();
   assert.deepEqual(Object.fromEntries(Object.entries(view.values).filter(([key]) => key.startsWith('VOICE_'))), {
-    VOICE_SUMMARY_ENABLED:'false',VOICE_SUMMARY_CONSENT_MODE:'individual',VOICE_SUMMARY_PROVIDER:'local',VOICE_SUMMARY_LOCAL_DEVICE:'vulkan',VOICE_SUMMARY_MODEL:'gpt-transcribe',VOICE_SUMMARY_LANGUAGES:'ms,en',
+    VOICE_SUMMARY_ENABLED:'false',VOICE_SUMMARY_CONSENT_MODE:'individual',VOICE_SUMMARY_PROVIDER:'local',VOICE_SUMMARY_LOCAL_DEVICE:'vulkan',VOICE_SUMMARY_LOCAL_MODEL:'large-v3-q5_0',VOICE_SUMMARY_MODEL:'gpt-transcribe',VOICE_SUMMARY_LANGUAGES:'ms,en',
     VOICE_SUMMARY_GLOSSARY:'',VOICE_SUMMARY_MINUTES:'5',VOICE_SUMMARY_MONTHLY_MINUTES:'60',VOICE_SUMMARY_LANGUAGE:'Malay',
   });
   assert.equal(view.secrets.VOICE_SUMMARY_API_KEY,false);
