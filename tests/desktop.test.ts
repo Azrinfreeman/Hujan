@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { SettingsStore } from '../src/settings.js';
 import { DesktopController } from '../src/desktop/controller.js';
 import { InstallationImport } from '../src/desktop/migration.js';
-import { authURL, resourcePath, validSender, validateRequest } from '../desktop/security.mjs';
+import { authURL, externalURL, resourcePath, validSender, validateRequest } from '../desktop/security.mjs';
 import { login } from '../src/auth.js';
 import { execFileSync } from 'node:child_process';
 
@@ -53,6 +53,8 @@ test('desktop bridge rejects unknown operations, arbitrary arguments and foreign
   assert.throws(()=>validateRequest('saveSettings',{large:'x'.repeat(20000)}));
   validateRequest('savePersonality',{preset:'custom',text:'Be calm.',revision:'abc'});
   assert.throws(()=>validateRequest('savePersonality',{large:'x'.repeat(20000)}));
+  validateRequest('openExternal',{url:'https://discord.com/developers/applications'});
+  assert.throws(()=>validateRequest('openExternal',{url:'https://discord.com/developers/applications',extra:true}));
   assert.throws(()=>validateRequest('importCommit',{source:'C:/private'}));
   validateRequest('operation',{id:'12345678-1234-1234-1234-123456789012'});
   const frame={url:'hujan://app/#settings'}, contents={mainFrame:frame};
@@ -67,6 +69,21 @@ test('desktop resources and authorization destinations are tightly restricted',(
   for(const url of ['hujan://other/app.js','hujan://app/.env','hujan://app/%2e%2e%2f.env','file:///C:/ui/app.js','hujan://app/app.js?file=.env'])assert.equal(resourcePath(url,'C:/ui'),undefined);
   assert.equal(authURL('https://auth.openai.com/api/accounts/authorize?state=fixture'),'https://auth.openai.com/api/accounts/authorize?state=fixture');
   for(const url of ['https://evil.example/api/accounts/authorize','javascript:alert(1)','https://auth.openai.com/other','https://user@auth.openai.com/api/accounts/authorize'])assert.throws(()=>authURL(url));
+  assert.equal(externalURL('https://discord.com/developers/applications'),'https://discord.com/developers/applications');
+  const invite='https://discord.com/oauth2/authorize?client_id=123456789012345678&scope=bot%20applications.commands&permissions=137481216';
+  assert.equal(externalURL(invite),invite);
+  assert.equal(externalURL(`${invite}&guild_id=223456789012345678&disable_guild_select=false`),`${invite}&guild_id=223456789012345678&disable_guild_select=false`);
+  for(const url of [
+    'https://evil.example/developers/applications',
+    'http://discord.com/developers/applications',
+    'https://user@discord.com/developers/applications',
+    'https://discord.com/channels/@me',
+    'javascript:alert(1)',
+    'https://discord.com/oauth2/authorize?client_id=abc&scope=bot%20applications.commands&permissions=137481216',
+    'https://discord.com/oauth2/authorize?client_id=123456789012345678&scope=bot&permissions=137481216',
+    'https://discord.com/oauth2/authorize?client_id=123456789012345678&scope=bot%20applications.commands&permissions=all',
+    'https://discord.com/oauth2/authorize?client_id=123456789012345678&scope=bot%20applications.commands&permissions=137481216&redirect_uri=https://evil.example',
+  ])assert.throws(()=>externalURL(url));
 });
 test('desktop controller validates requests and redacts saved credentials',async()=>{
   const root=mkdtempSync(join(tmpdir(),'hujan-desktop-'));

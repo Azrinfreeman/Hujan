@@ -1,6 +1,6 @@
 {
   "name": "hujan",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "Hujan — a self-hosted Discord companion with AI assistance, sleep ambience, local voice summaries, and a Windows desktop app.",
   "type": "module",

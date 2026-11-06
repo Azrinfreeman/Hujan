@@ -208,6 +208,37 @@ dialog { color: var(--text); background: var(--surface); border: 1px solid var(-
 dialog::backdrop { background: #13191f80; }
 dialog p { color: var(--muted); font-size: 14px; margin: 16px 0; }
 .dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.section-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.setup-dialog { max-width: 640px; }
+.setup-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.setup-progress { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.setup-step h3 { font-size: 16px; }
+.setup-step h3:focus { outline: none; }
+.setup-list { margin: 12px 0; padding-left: 22px; color: var(--muted); font-size: 14px; }
+.setup-list li + li { margin-top: 6px; }
+.setup-field { margin-top: 16px; }
+.setup-field label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+.setup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.setup-warning { margin-top: 16px; padding: 10px 12px; border-radius: var(--radius-control); color: var(--warning); background: var(--warning-bg); font-size: 13px; }
+.setup-error { margin-top: 16px; padding: 10px 12px; border-radius: var(--radius-control); color: var(--error); background: var(--error-bg); font-size: 13px; }
+.setup-nav { align-items: center; }
+.setup-spacer { flex: 1; }
+.setup-review { margin: 16px 0; padding: 0; list-style: none; }
+.setup-review li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.setup-review li span:last-child { font-family: var(--font-code); font-size: 13px; text-align: right; word-break: break-all; }
+.mock { width: 100%; height: auto; margin-top: 16px; }
+.mock-frame { fill: var(--surface-dim); stroke: var(--line); }
+.mock-bar { fill: var(--line); }
+.mock-dot { fill: var(--muted); }
+.mock-row { fill: var(--surface); stroke: var(--line); }
+.mock-selected { fill: var(--selected); }
+.mock-heading { font-size: 13px; font-weight: 600; fill: var(--text); }
+.mock-text { font-size: 12px; fill: var(--muted); }
+.mock-value { font-family: var(--font-code); font-size: 12px; fill: var(--text); }
+.mock-highlight { fill: var(--primary); }
+.mock-highlight-text { font-size: 12px; font-weight: 600; fill: var(--primary-ink); }
+.mock-toggle { fill: var(--green); }
+.mock-knob { fill: var(--surface); }
 #main, .field, .settings-feedback, .section-header { scroll-margin-block: 24px 140px; }
 @media (hover: hover) and (pointer: fine) {
   .nav-item:hover, .icon-button:hover, .filter:hover { background: var(--surface-dim); }

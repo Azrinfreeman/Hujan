@@ -2,7 +2,15 @@
 
 Last updated: **6 November 2026 (MYT, UTC+08:00)**.
 
-## Latest checkpoint — selectable personality and local speech-model choice
+## Latest checkpoint — guided Discord setup wizard
+
+Settings → Discord now has a **Help me set up** button opening a seven-step illustrated wizard: welcome, create the application, bot token plus Message Content Intent, generated invite link, Developer Mode, server/owner IDs, and a review step. The owner chose a **purely instructional** guide (no token-based auto-detection), the full seven steps, and inline SVG illustrations. The wizard only mirrors values into the existing settings form; DPAPI saving, revision checks, **Test saved connection** and command registration are unchanged. The invite link is built from the application ID with the documented permission set (`137481216`).
+
+Desktop external links required a new allowlisted `openExternal` operation across `desktop/security.mjs`, `desktop/preload.cjs` and `desktop/main.mjs`: only `discord.com/developers/applications` and a strictly validated `oauth2/authorize` invite are accepted, separate from the ChatGPT-only `authURL`. Browser sessions keep using ordinary `target="_blank"` links.
+
+Validation: TypeScript check clean, **242/242 tests** passed, and desktop smoke passed with new wizard assertions (dialog opens, steps advance, invite URL, review) plus a screenshot inspected for layout and illustrations. `README.md` and `WINDOWS_APP.md` document the guide. Version bumped to **0.3.4**; rebuilt `desktop/out/make/squirrel.windows/x64/HujanSetup.exe`: **275,386,880 bytes**, **NotSigned**, SHA-256 `A8D812B3139BAF00BE12A134AC8AFFDAEC07D1121E4590B5A414E17B18BCA647`; packaged dependency, voice-decoder and single-instance checks passed. Published as GitHub release v0.3.4. No production restart, provider inference or command registration was performed for this checkpoint.
+
+## Previous checkpoint — selectable personality and local speech-model choice
 
 The bot's personality is now selectable in the dashboard under **Settings → Personality**, instead of being fixed to the Sabah Malay roast. Five reviewed templates ship in `assets/personalities/`: Casual Malay (default), Friendly assistant, Professional and concise, Witty and playful, and Sabah Malay roast (marked mature). Owners can also write custom text up to 8,000 characters. Saving writes `PERSONALITY.md` atomically, applies from the next reply without a restart, keeps custom text when switching templates, recognises hand edits as Custom, and uses a revision check so a stale tab cannot overwrite a newer choice. `src/personality-presets.ts` implements the store, `/api/personality` (GET/PUT) exposes it, and `scripts/desktop-build.mjs` copies the templates into the packaged backend.
 

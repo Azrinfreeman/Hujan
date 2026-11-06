@@ -1,7 +1,7 @@
 {
   "name": "hujan-desktop",
   "productName": "Hujan",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "Personal Discord companion and ambience controls",
   "author": "Hujan contributors",

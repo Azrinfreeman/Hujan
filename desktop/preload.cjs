@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('hujan',Object.freeze({
   registerCommands:()=>call('registerCommands'),authStatus:()=>call('authStatus'),authConnect:()=>call('authConnect'),
   authSwitch:()=>call('authSwitch'),authDisconnect:()=>call('authDisconnect'),authCancel:()=>call('authCancel'),
   importSelect:()=>call('importSelect'),importCommit:ticket=>call('importCommit',{ticket}),
+  openExternal:url=>call('openExternal',{url}),
 }));

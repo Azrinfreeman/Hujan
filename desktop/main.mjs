@@ -6,7 +6,7 @@ import { mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { appURL, validSender, validateRequest, resourcePath, authURL } from './security.mjs';
+import { appURL, validSender, validateRequest, resourcePath, authURL, externalURL } from './security.mjs';
 
 const here=dirname(fileURLToPath(import.meta.url));
 const resources=app.isPackaged ? process.resourcesPath : join(here,'.stage');
@@ -156,6 +156,10 @@ else {
       const selection=importSelection;importSelection=undefined;
       if(!selection || argument.ticket !== selection.ticket || Date.now()-selection.at > 300000)throw new Error('Import selection expired. Select the folder again.');
       return request('importCommit',{source:selection.source});
+    }
+    if(operation === 'openExternal') {
+      await shell.openExternal(externalURL(argument.url));
+      return {message:'Opened in your browser.'};
     }
     return request(operation,argument);
   });

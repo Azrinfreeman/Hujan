@@ -702,3 +702,99 @@ document.addEventListener('pointerdown', event => {
   window.addEventListener('pointercancel', release, { once: true });
   window.addEventListener('blur', release, { once: true });
 });
+
+// Instructional Discord setup wizard. It only mirrors values into the settings
+// form; saving, DPAPI protection and connection tests stay on the existing paths.
+const setupDialog = $('setup-dialog');
+const setupSteps = [...document.querySelectorAll('.setup-step')];
+const setupSnowflake = /^\d{17,20}$/;
+// View Channel, Send Messages, Read Message History, Attach Files, Embed Links,
+// Connect, Speak, Manage Nicknames.
+const setupInvitePermissions = '137481216';
+let setupIndex = 0;
+function setupError(message = '') { const box = $('setup-error'); box.textContent = message; box.hidden = !message; }
+function setupInviteUrl() {
+  const id = $('setup-application-id').value.trim();
+  return setupSnowflake.test(id) ? `https://discord.com/oauth2/authorize?client_id=${id}&scope=bot%20applications.commands&permissions=${setupInvitePermissions}` : '';
+}
+async function openExternalLink(url) {
+  if (!url) return;
+  try {
+    if (window.hujan?.openExternal) await window.hujan.openExternal(url);
+    else window.open(url, '_blank', 'noopener,noreferrer');
+  } catch (error) { toast(error.message); }
+}
+function setupMirror(id, target) {
+  $(id).addEventListener('input', () => {
+    const field = $(target); field.value = $(id).value;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    setupError();
+    if (id === 'setup-application-id') $('setup-invite').value = setupInviteUrl();
+  });
+}
+setupMirror('setup-application-id', 'application-id');
+setupMirror('setup-token', 'discord-token');
+setupMirror('setup-guild-id', 'guild-id');
+setupMirror('setup-owner-id', 'owner-id');
+function setupValidate() {
+  if (setupIndex === 1 && !setupSnowflake.test($('setup-application-id').value.trim())) return 'Enter the 17-20 digit Application ID from General Information.';
+  if (setupIndex === 2) {
+    const token = $('setup-token').value.trim();
+    if (token && token.length < 20) return 'That token looks too short. Copy the full token from the Bot page.';
+    if (!token && !settingsData?.secrets?.DISCORD_BOT_TOKEN) return 'Paste the bot token from the Bot page, or keep a token that is already saved in Settings.';
+  }
+  if (setupIndex === 5) {
+    if (!setupSnowflake.test($('setup-guild-id').value.trim())) return 'Enter your 17-20 digit Server ID.';
+    if (!setupSnowflake.test($('setup-owner-id').value.trim())) return 'Enter your 17-20 digit Owner ID.';
+  }
+  return '';
+}
+function setupReview() {
+  const token = $('setup-token').value.trim();
+  const rows = [
+    ['Application ID', $('setup-application-id').value.trim()],
+    ['Bot token', token ? 'Entered in Settings' : settingsData?.secrets?.DISCORD_BOT_TOKEN ? 'Already saved' : 'Missing'],
+    ['Server ID', $('setup-guild-id').value.trim()],
+    ['Owner ID', $('setup-owner-id').value.trim()],
+    ['Message Content Intent', 'Enable on the Bot page'],
+    ['Invite link', 'Opened in step 4'],
+  ];
+  $('setup-review').innerHTML = rows.map(([label, value]) => `<li><span>${escapeHTML(label)}</span><span>${escapeHTML(value)}</span></li>`).join('');
+}
+function renderSetup() {
+  setupSteps.forEach((step, index) => { step.hidden = index !== setupIndex; });
+  $('setup-progress').textContent = `Step ${setupIndex + 1} of ${setupSteps.length}`;
+  $('setup-back').disabled = setupIndex === 0;
+  $('setup-skip').hidden = setupIndex === setupSteps.length - 1;
+  $('setup-next').textContent = setupIndex === setupSteps.length - 1 ? 'Fill in settings' : 'Next';
+  if (setupIndex === 3) $('setup-invite').value = setupInviteUrl();
+  if (setupIndex === setupSteps.length - 1) setupReview();
+  setupError();
+  setupSteps[setupIndex].querySelector('h3').focus();
+}
+$('open-setup').addEventListener('click', () => {
+  for (const [id, target] of [['setup-application-id', 'application-id'], ['setup-token', 'discord-token'], ['setup-guild-id', 'guild-id'], ['setup-owner-id', 'owner-id']]) $(id).value = $(target).value;
+  setupIndex = 0; setupDialog.showModal(); renderSetup();
+});
+$('setup-close').addEventListener('click', () => setupDialog.close());
+$('setup-back').addEventListener('click', () => { if (setupIndex > 0) { setupIndex--; renderSetup(); } });
+$('setup-skip').addEventListener('click', () => { setupIndex = setupSteps.length - 1; renderSetup(); });
+$('setup-next').addEventListener('click', () => {
+  const error = setupValidate();
+  if (error) { setupError(error); return; }
+  if (setupIndex < setupSteps.length - 1) { setupIndex++; renderSetup(); return; }
+  setupDialog.close();
+  location.hash = 'settings';
+  $('save-settings').focus();
+  toast(settingsDirty ? 'Review the Discord values, then choose Save changes.' : 'Discord values are saved. Run Test saved connection.');
+});
+$('setup-open-portal').addEventListener('click', () => void openExternalLink('https://discord.com/developers/applications'));
+$('setup-open-invite').addEventListener('click', () => void openExternalLink(setupInviteUrl()));
+$('setup-copy-invite').addEventListener('click', async () => {
+  const url = setupInviteUrl();
+  if (!url) { setupError('Enter your Application ID in step 2 first.'); return; }
+  $('setup-invite').value = url;
+  try { await navigator.clipboard.writeText(url); toast('Invite link copied. Open it to add Hujan to your server.'); }
+  catch { $('setup-invite').focus(); $('setup-invite').select(); toast('Select and copy the invite link.'); }
+});
+setupDialog.addEventListener('close', () => setupError());
