@@ -51,6 +51,8 @@ test('desktop bridge rejects unknown operations, arbitrary arguments and foreign
   validateRequest('authSwitch',{});
   assert.throws(()=>validateRequest('authSwitch',{newAccount:'anything'}));
   assert.throws(()=>validateRequest('saveSettings',{large:'x'.repeat(20000)}));
+  validateRequest('savePersonality',{preset:'custom',text:'Be calm.',revision:'abc'});
+  assert.throws(()=>validateRequest('savePersonality',{large:'x'.repeat(20000)}));
   assert.throws(()=>validateRequest('importCommit',{source:'C:/private'}));
   validateRequest('operation',{id:'12345678-1234-1234-1234-123456789012'});
   const frame={url:'hujan://app/#settings'}, contents={mainFrame:frame};
@@ -76,6 +78,13 @@ test('desktop controller validates requests and redacts saved credentials',async
     const result=await controller.dispatch('saveSettings',{revision:'legacy',values:ids,secrets:{DISCORD_BOT_TOKEN:{action:'replace',value:'synthetic-token'}}});
     assert.equal(JSON.stringify(result).includes('synthetic-token'),false);
     assert.equal((await controller.dispatch('settings') as ReturnType<SettingsStore['view']>).secrets.DISCORD_BOT_TOKEN,true);
+    const personality=await controller.dispatch('personality') as {presets:Array<{id:string}>;revision:string};
+    assert.ok(personality.presets.some(item=>item.id==='casual-ms'));
+    const saved=await controller.dispatch('savePersonality',{preset:'custom',text:'Be calm.',revision:personality.revision}) as {applied:boolean;text:string};
+    assert.equal(saved.applied,true);
+    assert.equal(saved.text,'Be calm.');
+    assert.equal(readFileSync(join(root,'PERSONALITY.md'),'utf8'),'Be calm.\n');
+    await assert.rejects(controller.dispatch('savePersonality',{preset:'custom',text:'Stale.',revision:personality.revision}),/changed in another window/);
     writeFileSync(join(root,'data/import.pending'),'{}');
     await assert.rejects(controller.dispatch('start',{}),/interrupted import/);
   } finally {rmSync(root,{recursive:true,force:true});}

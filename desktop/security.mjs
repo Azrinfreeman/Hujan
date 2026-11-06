@@ -1,7 +1,7 @@
 import { resolve, join, relative, isAbsolute } from 'node:path';
 
 export const appURL = 'hujan://app/';
-export const allowedOperations = new Set(['status','settings','saveSettings','localSpeechStatus','localSpeechSetup','localSpeechCancel','voiceSummaryStatus','management','freshManagement','start','stop','operation',
+export const allowedOperations = new Set(['status','settings','saveSettings','personality','savePersonality','localSpeechStatus','localSpeechSetup','localSpeechCancel','voiceSummaryStatus','management','freshManagement','start','stop','operation',
   'clearStaleLocks','testDiscord','testAI','testAIResponse','registerCommands','authStatus','authConnect','authSwitch','authDisconnect','authCancel','importSelect','importCommit']);
 export function validSender(event, window) {
   return !!window && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame
@@ -14,7 +14,7 @@ export function validateRequest(operation, argument) {
     if (Object.keys(argument).length !== 1 || typeof argument.id !== 'string' || !/^[a-f\d-]{36}$/.test(argument.id)) throw new Error('Invalid operation ID.');
   } else if (operation === 'importCommit') {
     if (Object.keys(argument).length !== 1 || typeof argument.ticket !== 'string' || !/^[a-f\d-]{36}$/.test(argument.ticket)) throw new Error('Invalid import ticket.');
-  } else if (operation !== 'saveSettings' && Object.keys(argument).length) throw new Error('This action does not accept arguments.');
+  } else if (operation !== 'saveSettings' && operation !== 'savePersonality' && Object.keys(argument).length) throw new Error('This action does not accept arguments.');
 }
 const resources = new Map([['/','index.html'],['/app.js','app.js'],['/styles.css','styles.css'],['/transport.js','transport.js'],['/hujan.png','hujan.png']]);
 export function resourcePath(url, root) {

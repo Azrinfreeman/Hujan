@@ -7,6 +7,8 @@ window.hujanRequest = async (path, options = {}) => {
     'GET /api/status':()=>window.hujan.status(),
     'GET /api/session':async()=>({authorized:true,csrf:'desktop'}),
     'GET /api/settings':()=>window.hujan.settings(),
+    'GET /api/personality':()=>window.hujan.personality(),
+    'PUT /api/personality':()=>window.hujan.savePersonality(JSON.parse(options.body)),
     'GET /api/voice-summary':()=>window.hujan.voiceSummaryStatus(),
     'GET /api/voice-summary/local':()=>window.hujan.localSpeechStatus(),
     'POST /api/voice-summary/local/setup':()=>window.hujan.localSpeechSetup(),

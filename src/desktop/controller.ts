@@ -19,10 +19,12 @@ export class DesktopController {
   cancel() { this.login?.abort(); }
   async dispatch(operation: string, argument: unknown = {}) {
     if (!isRecord(argument) || Buffer.byteLength(JSON.stringify(argument)) > 16384) throw new UserError('Invalid desktop request.');
-    if (!['saveSettings','operation','importPreview','importCommit'].includes(operation)) emptyRequest(argument);
+    if (!['saveSettings','savePersonality','operation','importPreview','importCommit'].includes(operation)) emptyRequest(argument);
     switch (operation) {
       case 'status': return readRuntimeStatus(join(this.settings.root,'data/runtime-status.json'));
       case 'settings': return this.settings.view();
+      case 'personality': return this.service.personalityState();
+      case 'savePersonality': return this.service.savePersonality(argument);
       case 'localSpeechStatus': return this.service.localSpeechStatus();
       case 'localSpeechSetup': return this.service.localSpeechSetup();
       case 'localSpeechCancel': return this.service.localSpeechCancel();

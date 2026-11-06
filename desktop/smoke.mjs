@@ -40,6 +40,9 @@ export async function runSmoke({window,request,stateRoot,focus,tray}) {
   await js('location.hash="settings"');
   await wait('document.getElementById("page-settings").hidden === false');
   console.log('Desktop smoke: settings view ready.');
+  assert.equal(await js('typeof window.hujan.personality'),'function');
+  assert.equal(await js('typeof window.hujan.savePersonality'),'function');
+  await wait('document.getElementById("personality-panel").hidden === false && document.getElementById("personality-preset").options.length > 0');
   await wait('document.getElementById("switch-chatgpt").hidden === false && document.getElementById("switch-chatgpt").disabled === false');
   await js('document.getElementById("desktop-setup").scrollIntoView({block:"center"})');
   await new Promise(resolve=>setTimeout(resolve,350));
