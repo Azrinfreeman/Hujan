@@ -120,3 +120,12 @@ test('local model catalog is pinned, selectable and validated, and the default k
   assert.doesNotThrow(()=>validateValues({VOICE_SUMMARY_LOCAL_MODEL:'base-q5_1'}));
   assert.throws(()=>validateValues({VOICE_SUMMARY_LOCAL_MODEL:'huge'}),/listed/);
 });
+
+test('free-space check refuses an impossible requirement and passes a small one',async()=>{
+  const { requireFreeSpace } = await import('../src/voice-summary/local-setup.js');
+  const root=mkdtempSync(join(tmpdir(),'local-space-'));
+  try {
+    await requireFreeSpace(root,1000);
+    await assert.rejects(requireFreeSpace(root,1e18),/free disk space/);
+  } finally {rmSync(root,{recursive:true,force:true});}
+});

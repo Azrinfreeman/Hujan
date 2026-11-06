@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile, unlink } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, rm, stat, statfs, writeFile, unlink } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -76,6 +76,11 @@ export async function localReady(root:string,verify=false,id:string=defaultLocal
   return await engineReady(root,verify) && await modelReady(root,id,verify);
 }
 
+export async function requireFreeSpace(directory:string,bytes:number) {
+  try {const info=await statfs(directory);if(Number(info.bavail)*Number(info.bsize)<bytes)throw new UserError(`Not enough free disk space. About ${Math.ceil(bytes/1e8)/10} GB is needed.`);}
+  catch(error) {if(error instanceof UserError)throw error;}
+}
+
 export async function downloadVerified(url:string,path:string,bytes:number,digest:string,signal:AbortSignal,progress:(bytes:number)=>void,request=fetch) {
   const response=await request(url,{signal,redirect:'follow'});
   if(!response.ok || !response.body)throw new UserError('Local speech download failed. Check connectivity and retry setup.');
@@ -149,6 +154,7 @@ export class LocalSpeechSetup {
       if(await localReady(this.root,false,model.id)){this.current={...this.current,state:'ready',progress:100,message:'Local transcription is ready.'};return;}
       const needEngine=!await engineReady(this.root);
       const total=(needEngine?localAssets.engineBytes:0)+((await modelReady(this.root,model.id))?0:model.bytes);
+      await requireFreeSpace(base,total+300e6);
       let engineDone=0,modelDone=0;
       const update=()=>{this.current.progress=Math.floor((engineDone+modelDone)/total*95);};
       if(needEngine) {
@@ -176,12 +182,13 @@ export class LocalSpeechSetup {
         }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
         if(!skip){
           await rename(staging,destination);published=true;
-          if(backup)await rm(setupPath(base,backup),{recursive:true,force:true});
+          if(backup){await rename(join(backup,'model.bin'),join(destination,'model.bin')).catch(()=>{});await rm(setupPath(base,backup),{recursive:true,force:true});}
         }
       }
       if(!await modelReady(this.root,model.id)) {
         const target=setupPath(base,localModelPath(this.root,model.id));
         await mkdir(dirname(target),{recursive:true});
+        for(const name of await readdir(dirname(target)))if(/\.part-[0-9a-f-]{36}$/.test(name))await rm(join(dirname(target),name),{force:true});
         const part=`${target}.part-${randomUUID()}`;
         try {
           await downloadVerified(localModelUrl(model.id),part,model.bytes,model.hash,signal,bytes=>{modelDone=bytes;update();});
