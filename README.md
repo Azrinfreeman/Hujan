@@ -1,238 +1,84 @@
 # Hujan
 
-Hujan (Malay for "rain") is a self-hosted Discord companion: an AI assistant with a selectable personality (casual Malay by default; English, professional, playful, Sabah roast, or your own text), rain and sleep ambience, consent-gated local voice summaries, and a Windows desktop app — all through one Discord connection. AI inference, image conversion and DPAPI credential work run in a supervised child process.
+> *Hujan* is Malay for "rain."
 
-## Features
+A self-hosted Discord companion for Windows. One bot gives your server an AI assistant with a personality you choose, rain and sleep ambience for voice channels, and consent-gated voice summaries transcribed on your own machine.
 
-- **AI assistant with a personality you choose** — ask questions, explain a selected message, or attach a screenshot. Pick one of five built-in styles or write your own text in the dashboard; changes apply on the next reply with no restart. A tool-calling layer lets the model rename server members via `/nickname` or a plain mention. Runs on an existing ChatGPT subscription or an OpenAI API key.
-- **Rain and sleep ambience** — `/sleep join mode:rain|sunny|silent`, scene styles, and thunder, streamed to a voice channel from local PCM.
-- **Local voice summaries** — consent-gated, speaker-separated capture of a rolling five-minute window, transcribed offline with Whisper `large-v3-q5_0` on Vulkan/CPU, then summarized in the channel's own text chat. No per-minute API charge, with Malay WER/CER evaluation built in.
-- **Windows desktop app** — an Electron app with a system tray, Start/Stop, protected settings, and a bundled Node runtime (no system Node needed).
-- **Local web dashboard** — a Material-inspired owner interface (Overview, Ambience, Commands, System Health, Settings) bound to `127.0.0.1` with CSRF and session protection.
+## What it does
 
-## Engineering highlights
+- **AI assistant** with five built-in personalities (casual Malay by default, friendly, professional, playful, Sabah roast) or your own text. Ask questions, explain a message, send a screenshot, or rename a member by mentioning the bot. It runs on a ChatGPT subscription or your own OpenAI API key.
+- **Sleep ambience.** `/sleep join mode:rain|sunny|silent` streams rain, sunny birdsong and distant thunder into a voice channel from local audio files.
+- **Local voice summaries.** After everyone consents, Hujan keeps a rolling five-minute window, transcribes it offline with Whisper `large-v3-q5_0` (Vulkan or CPU), and posts a summary. There is no per-minute transcription fee. Marked experimental.
+- **Windows desktop app.** Electron app with a tray icon, Start/Stop, protected settings and a bundled Node runtime.
+- **Local dashboard.** Owner-only web UI at `127.0.0.1` for settings, ambience, commands and health.
 
-- **Process isolation** — a supervised AI worker runs inference, image conversion, and DPAPI work as a child process, kept off Discord credentials and API keys.
-- **Credential protection** — Discord and AI credentials are encrypted with Windows DPAPI and stored as versioned revisions with atomic replacement and rollback.
-- **Deterministic tool safety** — one exact function capability per request; a completed call is validated before any Discord mutation runs.
-- **Durable delivery** — SQLite event claims and mention nonces prevent replayed actions after a restart.
-- **Personality you can edit safely** — five reviewed templates plus free text, length/character validated, written atomically to `PERSONALITY.md` with an optimistic revision check; the dashboard keeps your custom text when you switch templates and recognises hand edits.
-- **Verified** — `241/241` automated tests and a clean TypeScript check; the desktop app is exercised through Electron smoke and packaged-runtime checks.
+## Requirements
 
-The sections below cover operations: how to run it, self-hosting, Discord commands, voice-summary consent, storage, maintenance, and rollback.
+- Windows (credentials are protected with DPAPI; Linux and Docker are not supported)
+- Node.js `>=24.19.0 <25` (not needed for the desktop installer)
+- A Discord application and bot token you control
+- An OpenAI API key, or an existing ChatGPT connection
 
-## Start and stop
-
-Rain and sunny ambience default to **20%** recording level. `RAIN_VOLUME=0.2` in `.env` controls both modes; restart the bot after changing it. Rain thunder scales with the same setting.
-
-Requires Windows, Node.js `>=24.19.0 <25`, and local configuration through Settings or a private `.env`. Existing ChatGPT authorization and dashboard-saved credentials are protected with Windows CurrentUser DPAPI.
+## Quick start
 
 ```powershell
-cd E:\Projects\2026Projject\personalAIDiscordBot\combined-discord-companion
-npm start
+git clone https://github.com/Azrinfreeman/Hujan.git
+cd Hujan
+npm install
+npm run dashboard
 ```
 
-Keep the terminal open. Press Ctrl+C to stop both processes. If the background deployment is already running, a second start is intentionally rejected by the frontend lock. Use the existing process or stop its **verified** PID first. No automatic Windows startup/service is installed.
+1. Open <http://127.0.0.1:3210> and enter the one-time access code printed in the terminal.
+2. Go to **Settings** and add your Discord token, application ID, server ID and owner ID. **Help me set up** walks through creating the bot.
+3. Choose **OpenAI API key** and enter a key and model, or keep **Existing ChatGPT connection** and run `npm run auth -- login` with the bot stopped.
+4. Register the slash commands once: `npm run register`
+5. Click **Start bot**, or run `npm start`.
 
-Do not start either original bot alongside the combined runtime. The original sleep project has no compatible ownership guard and would share the same Discord token; the original assistant project would consume the same connected AI grant through a different credential copy.
+Prefer an app? Build the installer with `npm run desktop:make`. See [WINDOWS_APP.md](WINDOWS_APP.md). The current installer is unsigned.
 
-Local operational status is written every 10 seconds to `data/runtime-status.json`: Discord readiness, AI state, active voice/player state, frontend memory, interval CPU and event-loop delay. The file does not contain member messages, tokens or account identities. It is a local snapshot, not a substitute for checking that its PID is still running. Startup output goes to `data/bot.stdout.log` and `data/bot.stderr.log` for the hidden deployment.
+## Commands
 
-## Windows app
-
-A dedicated Hujan Windows application is available, with its own window, system tray, Start/Stop, protected self-hosting settings, setup actions, and bundled runtime. Build output: `desktop/out/make/squirrel.windows/x64/HujanSetup.exe`. The current installer is unsigned. See [Windows installation, import, build and recovery](WINDOWS_APP.md). Desktop state is separate under `%LOCALAPPDATA%\Hujan`; importing the source installation is explicit and requires it to be stopped first.
-
-The browser dashboard below remains available for source-based development and recovery.
-
-## Local web dashboard
-
-Run `npm run dashboard`, then open [Hujan workspace](http://127.0.0.1:3210). Choose **Connect workspace** and enter the single-use local access code printed in the terminal. The code expires after 10 minutes; the browser session lasts 12 hours. Restarting the dashboard issues a new code and does not stop the bot. Keep the dashboard terminal open; Ctrl+C closes the dashboard.
-
-The responsive Material Design-inspired interface includes Overview, Ambience, searchable Commands, System Health, and Settings, with light/dark themes. It refreshes operational status every 10 seconds and marks stale or stopped runtimes offline. No additional dependencies or frontend build are required.
-
-**Start bot** launches this installation once. **Stop bot** requests cooperative shutdown of the verified frontend and its AI worker, preserving saved sleep sessions for the next start. The process state is separate from Discord/AI readiness. Closing the dashboard leaves the bot running; reopening it reconnects to its verified local control channel. Stop disconnects voice and interrupts active AI work. Controls never force-stop processes or silently delete bot/auth locks.
-
-An older instance without the new control channel appears as **Externally managed**. Stop it through its existing terminal or the documented verified operational procedure, then start the updated bot once using `npm start` or the dashboard. Do not launch a second copy or remove a lock just because a snapshot is stale. If startup/shutdown cannot be verified, controls fail closed and show recovery guidance.
-
-If a crash leaves `.lock` files blocking `npm start` or **Start bot**, open the desktop app or connect to the dashboard and click **Clear stale locks** in the status notice. This explicitly removes frontend, AI, and legacy runtime locks only after verifying that their recorded processes have exited. It refuses recovery if a process is running, ownership is invalid, or process inspection fails. Then click **Start bot** or retry `npm start`. Settings and dependency lockfiles are not deleted.
-
-Settings cover Discord identity/token, AI provider/model, access restrictions, controller roles, and shared ambience volume. **Save changes** writes a new local revision and never restarts the bot; running instances show **Restart required** until you explicitly Stop and Start. Existing secrets appear only as Configured, with Replace/Remove actions. Newly entered credentials are cleared after saving or leaving Settings.
-
-New to Discord configuration? Choose **Help me set up** in Settings → Discord for a seven-step illustrated guide: create the application, copy the bot token, enable Message Content Intent, open a generated invite link, turn on Developer Mode, and copy the application, server and owner IDs. The guide only fills in the settings form; saving, DPAPI protection and connection testing still use the normal controls.
-
-Ambience and other Discord actions still copy slash commands; the bot's Discord permissions remain authoritative. **Test saved connection** validates saved configuration without starting the bot or registering commands. In API-key mode it checks authentication/model catalog only, not inference. **Test AI response · may use API credit** is an explicit, bounded request; saving, loading pages, and catalog tests never perform paid inference.
-
-The server binds only to `127.0.0.1`. Administrative routes require the local owner session, same-origin checks, CSRF protection, bounded requests, and rate limits. The read-only operational snapshot remains sanitized; raw credentials, conversation history, and logs are never served. This is a local owner interface, not remote hosting or isolation from other programs running as your Windows user. Set `DASHBOARD_PORT` in your terminal to use another port; it is not loaded from `.env` by the dashboard launcher.
-
-### Self-hosting with your own bot and API key
-
-The supported setup is **Windows, one installation per owner and configured AI server**. Each host supplies their own Discord application/token and AI connection. Individual Discord-member API keys, shared tenant accounts, other AI vendors, Linux, and Docker are not implemented.
-
-1. Use Node.js `>=24.19.0 <25`, install this project's pinned dependencies, and retain its bundled `assets/` files. Copy source and example configuration only; never distribute another owner's `.env`, `data/`, credentials, or conversations.
-2. Run `npm run dashboard`, connect the owner browser session, and open Settings. Supply your Discord bot token, matching application ID, server ID, and owner ID. Install that bot into your server with the documented chat/voice permissions; enable Message Content intent for selected-message reading.
-3. Choose **OpenAI API key**, enter your own key and a Responses-compatible model available to your API project, and save. Reasoning and optional web search must be supported by that model; API web search is off by default. Model catalog access does not prove inference or tool compatibility. API usage belongs to your API project; it does not use this installation owner's existing ChatGPT grant.
-4. Alternatively, retain **Existing ChatGPT connection**. With the bot stopped, run `npm run auth -- login` under your Windows account. The existing authorization flow and account eligibility rules remain unchanged.
-5. Run `npm run register` explicitly once configuration is saved. It reads the same effective settings, upserts the seven commands, and preserves unrelated commands. Saving or starting never registers commands automatically.
-6. Click Start bot. Verify Discord/AI readiness and use the existing Discord pilot checks before relying on unattended playback.
-
-API requests follow OpenAI's [server-side authentication guidance](https://developers.openai.com/api/reference/overview#authentication) and [Responses-based text generation](https://developers.openai.com/api/docs/guides/text). Credentials never go in frontend bundles or browser storage, and provider failures never trigger automatic switching between API billing and the existing ChatGPT connection.
-
-### Configuration storage and recovery
-
-Startup, registration, and auth now share one configuration bootstrap. Precedence is **explicit inherited deployment environment → saved dashboard settings → legacy `.env` → defaults**. Existing `.env` files are not automatically rewritten or migrated. Externally overridden fields are disabled in Settings. Relative configured data/asset paths resolve against this installation.
-
-`data/dashboard/settings.json` contains non-secret values and references a versioned `secrets-<revision>.dpapi` file protected by Windows CurrentUser DPAPI. Saving commits the encrypted file before atomically replacing the settings manifest, and retains `settings.previous.json` plus its encrypted credential reference. The existing `data/ai/chatgpt.dpapi` grant remains separate. Moving installations to another Windows user/machine requires entering credentials again. Explicit Remove overrides a legacy secret instead of silently restoring it from `.env`.
-
-On settings corruption, stop any verified bot first and restore a consistent `settings.previous.json` with its referenced encrypted file under the same Windows account. A leftover `settings.lock` or `supervisor.lock` requires confirming that its owner is no longer active before recovery. Never remove frontend/AI locks based only on sandboxed visibility. The supervisor records launched PIDs even before startup completes, so a timed-out launch cannot be blindly duplicated. Inspect the existing process and local `data/bot.stdout.log` / `data/bot.stderr.log` before retrying.
-
-## Discord usage
-
-| Action | Command |
+| Command | What it does |
 | --- | --- |
-| Ask Hujan | `/ask prompt:...` or mention Hujan with a question |
-| Private AI answer | `/ask prompt:... private:true` |
-| Attach a screenshot | `/ask image:...` with an optional prompt, or tag Hujan in a message with one attachment |
-| Explain a selected message | Reply to that message, mention Hujan and say what to explain |
-| Clear your AI context in this channel | `/reset` |
-| Change a member’s server nickname | `/nickname member:@Ali name:Raja Tidur` |
-| Check AI connection | `/status` |
-| Join your voice channel | `/sleep join mode:rain`, `sunny` or `silent` |
-| Change ambience | `/sleep rain on`, `/sleep sunny on` |
-| Quietly remain in voice | `/sleep rain off` or `/sleep sunny off` |
-| Choose a rain scene | `/sleep rain style scene:...` or `/sleep rain mild-thunder` |
-| Check voice/audio | `/sleep status` |
-| Leave and disable automatic restoration | `/sleep leave` |
+| `/ask prompt:… [private] [image]` | Ask Hujan; mentioning the bot works too |
+| `/reset` | Clear your AI context in this channel |
+| `/nickname member:@Ali name:…` | Change a member's server nickname |
+| `/status` | Check the AI connection |
+| `/sleep join\|leave\|status` | Join, leave or inspect voice ambience |
+| `/sleep rain\|sunny on\|off` | Switch ambience; `off` stays in voice quietly |
+| `/voice-summary start\|consent\|summarize\|withdraw` | Consent-gated voice summaries |
 
-AI replies are typed, including in voice-channel text chat. Optional voice transcription requires the explicit listening controls below; it is disabled by default. No AI speech is generated. Public AI delivery is one message containing question, answer and, for own uploads, image preview. Long text uses one `response.txt` attachment. Ambience on/off deliberately keeps the sleep bot’s private acknowledgment plus one public announcement.
+The full list, permissions and nickname rules are in [docs/DISCORD_USAGE.md](docs/DISCORD_USAGE.md).
 
-### Voice summaries and Malay transcript review (experimental)
+## Personalities
 
-In **Settings → Voice summaries**, choose **Local** (the default) and **Set up local transcription**. Setup downloads and verifies the speech engine and multilingual Whisper `large-v3-q5_0` model, about 1.1 GB, once per profile. No speech API key or Python/CUDA installation is needed. Enable the feature, save, and restart the bot. Vulkan uses compatible GPUs, including the tested AMD RX 6600 XT; choose CPU explicitly if Vulkan is unavailable. Recognition is local; summaries still send the transcript to the selected text AI provider, with no web search, nickname tools, or ordinary chat history. This does not make text summarization fully offline. You can also pick a smaller Whisper model (Large v3 Turbo, Medium, Small or Base) under **Speech model**; save settings, then press Set up to download it. Smaller models are faster and lighter but less accurate, especially for Malay and mixed languages. Each model is checksum-verified before use. A **Language preset** fills the expected language codes and summary language (Malay + English, English, Mandarin + English, Indonesian + English, or custom).
+Pick one under **Settings → Personality**. Changes apply on the next reply, with no restart. The text lives in `PERSONALITY.md`, so you can edit it by hand. Templates are in [`assets/personalities/`](assets/personalities).
 
-The optional **OpenAI API** transcription provider preserves the previous `gpt-transcribe` path and requires its own protected speech key. Switching providers never silently falls back or overwrites the saved cloud key/model. Provider changes apply after restarting; a fresh listening session announces the actual destination before anyone consents.
+## Design notes
 
-The Windows Vulkan runtime is a checksum-pinned community build from `nyancodex/whisper-server-vulkan-windows` v0.1.0, based on upstream whisper.cpp 1.9.5 (`d1be6fde11ac6e0407606b4e42fe72d34add8037`). The model is pinned to a specific Hugging Face revision and SHA-256. Files live under the profile's `data/local-speech/` outside the installer. Setup includes third-party notices; engine/model files are verified before native execution. The native server is restricted to an ephemeral loopback port and unpredictable request prefix, runs without API credentials, and is contained in a Windows kill-on-close process job. No local audio is uploaded to a transcription service.
+- **Process isolation.** AI inference, image conversion and DPAPI work run in a supervised child process that never sees Discord credentials or API keys. This is not an OS sandbox: both processes run as the same Windows user.
+- **Credentials.** Encrypted with Windows DPAPI and stored as versioned revisions with atomic replacement and rollback.
+- **Tool safety.** Each request gets one exact function capability, and the result is validated before any Discord change.
+- **No replayed actions.** SQLite event claims and mention nonces prevent repeats after a restart.
+- **Privacy.** Voice audio stays in memory, and logs never contain audio or transcripts. Summaries do send the transcript text to your chosen AI provider.
 
-For source use, `npm run voice:local:setup` installs into this project's data directory. Add `-- --desktop` to target `%LOCALAPPDATA%/Hujan` instead. `npm run voice:local:smoke -- --desktop --pipeline` checks the full Opus/local-worker/Vulkan path using a downloaded public-domain English sample, with no Discord recording or speech API submission. The test requires internet only to fetch that public sample; normal local transcription uses the already downloaded model.
+## Documentation
 
-1. An authorized sleep controller in a standard voice channel runs `/voice-summary start`. Existing ambience is preserved; if disconnected, the bot joins silently. A public notice explains capture and the selected local/cloud destination before audio is accepted.
-2. By default, every human participant runs `/voice-summary consent`; capture begins only once everyone opts in. For a server whose beta testers have all already consented, choose **Consent → Server beta testers already consented** in Settings, save, and restart. `/voice-summary start` then announces and begins listening without individual commands. This applies only to the configured server and does not start listening on launch. In server mode, participants join and leave automatically without resetting coverage, cancelling requested summaries, or posting participant-change messages. Departed speakers' audio remains until the rolling window expires; an empty channel stays idle while the connection is healthy. Individual mode still resets on membership changes and requires fresh consent. A bot disconnect, move, deafen, receive failure, or resource limit pauses capture and requires a new session. `/voice-summary withdraw` lets any participant stop and clear pending audio/results in either mode; controllers can also `/voice-summary stop`.
-3. After four or five minutes of continuous authorized listening, use the channel's own text chat: `@Hujan ringkaskan perbualan voice 5 minit tadi`, `@Hujan summarize the last 4 minutes of voice chat`, or `/voice-summary summarize minutes:5`. The requester must be in the same voice channel and satisfy normal AI access rules when submitting. In server mode, an accepted result can finish after the requester leaves or moves voice, provided they still belong to the server and retain AI access and visibility of the original result channel. Results stay in that original channel. Authorized server-consent participants can request speech retained from before they joined; the bot cannot reconstruct speech from before capture started. Leaving voice does not withdraw consent; use `/voice-summary withdraw` to stop and discard pending results.
-4. For checking recognition, use `/voice-summary transcript minutes:5`, or `/voice-summary test seconds:30` after at least 30 seconds of capture. Raw recognized text includes speaker names, segment IDs, approximate relative times, and the configured model; it is not independently verified or silently rewritten. Summary bullets reference transcript segment IDs, which provide traceability rather than a guarantee of factual accuracy.
-5. Short test audio exports require `/voice-summary start allow-test-audio:true` before participant consent, followed by `/voice-summary test seconds:30 audio:true`. This explicitly posts WAV clips to the same channel for comparison. Exports and posted transcripts remain on Discord until deleted. Do not enable test audio exports when they are not wanted.
-
-Normal audio stays in memory for five minutes plus up to five seconds of event-delivery headroom, with a 64 MiB compressed-audio cap and at most ten human speakers. An in-flight snapshot has a 120-second cloud deadline or a ten-minute local deadline, allowing slower local hardware; stopping/withdrawing cancels work and terminates the local native engine. No audio/transcripts enter diagnostic logs, normal AI history, or persistent databases; monthly conservative cloud usage reservations alone are stored in `data/voice-summary/usage.sqlite`. Model files remain cached, but conversation audio is not written to them. Provider-side text/cloud retention is separate from these local limits. Authenticated app status contains only operational counts/state.
-
-Transcription runs only on explicit summary/transcript/test requests. Local recognition has no per-minute API charge and does not consume the cloud transcription allowance. Cloud mode defaults to a local guard of 60 uploaded speaker-audio minutes per UTC month; reservations include pauses and overlapping speakers, and ambiguous submissions are not automatically refunded or retried. Use provider billing limits too. One request runs at a time, with a 30-second per-requester cooldown. Long results require Attach Files. Voice-channel text may be readable by people outside the live call.
-
-This implementation has isolated receive/decoder, consent, permission, worker, provider-mock and stateless-summary tests. Real Discord receive stability, supported API language hints, Malay accent benchmarks, and human audio/ambience coexistence are **not yet verified**. The voice-summary test suite and the offline WER/CER helper define the evaluation targets. Do not interpret a connected voice session or an empty transcript as proof that all speech was captured.
-
-For offline recognition scoring, prepare a private JSON array of `{ "group": "Sabah clean", "reference": "manually checked words", "recognized": "model transcript" }` pairs and run `npm run voice:eval -- output/reference-pairs.json`. It reports WER/CER separately per accent/condition without printing transcript bodies or making any network request. The normalization preserves dialect words, numbers, and negations; human checks of critical facts and summary accuracy remain separate. Keep private recordings and reference files under the Git-ignored `output/` directory.
-
-Continuous speech chunks overlap by up to 200 ms to reduce boundary truncation. Raw review transcripts retain the original chunk recognition; only the summary input removes exact repeated boundary phrases of at least three words in overlapping chunks. Speakers include their Discord ID to distinguish duplicate display names.
-
-### Nickname changes
-
-Only the configured owner (`OWNER_DISCORD_ID`) and members with **Manage Nicknames** may request changes, within the configured AI guild/channel/role access rules. These change a **server nickname**, not a global Discord account username.
-
-Use `/nickname member:@Ali name:Raja Tidur` for a private acknowledgment, or ask through `/ask`/a direct bot mention:
-
-```text
-@Hujan tolong tukar nickname @Ali jadi "Raja Tidur"
-@HujanAI bah bolehkan kalau kau tukar nama @Ali kepada Raja Tidur
-@Hujan rename @Ali to "Raja Tidur"
-```
-
-Select real Discord mentions for your bot and the target member. Chat requests need one explicitly mentioned target and one exact nickname after `to`, `kepada` or `jadi`; quotes are optional. Sabahan courtesy openings such as `bah bolehkan kalau kau` are supported. Hujan cannot pick a different member/name, rename someone from quoted context or previous history, or act on a hypothetical/negative request. For other phrasing, use `/nickname`. Names must contain 1–32 characters without control characters or line breaks.
-
-Hujan needs **Manage Nicknames**, and its highest role must be above the target’s highest role, following [Discord’s permission hierarchy](https://docs.discord.com/developers/topics/permissions#permission-hierarchy). The server owner cannot be renamed by a bot. Other moderators must also outrank their target, except when changing their own nickname; the configured bot owner is explicitly authorized but still subject to the bot’s Discord hierarchy limits. Current actor/bot permissions, member roles and configured access restrictions are fetched again immediately before an action.
-
-Chat requests provide one exact function capability to the worker. A completed AI function call is validated against it, then the frontend performs only a nickname PATCH and returns a confirmed application result. No model-written “done” message triggers a change. Duplicate worker calls share the same action promise; durable frontend event claims prevent replayed actions after restart. Slash nickname changes do not require AI availability. A four-request action queue and two-second per-member cooldown bound direct action load.
-
-The result is acknowledged only after Discord confirms the requested nickname. Successful changes show the requester, target member and new nickname publicly in the requesting channel. Public AI/mention replies carry this confirmation themselves; `/nickname` and private `/ask` also post one public confirmation after completing their private acknowledgment. Mentions are displayed without pinging members. Failed, replayed and already-set requests do not post an announcement. If posting fails after the rename succeeds, the private result explains that the name changed but its announcement could not be posted. An interrupted/failed request can have an uncertain result; check the member’s current nickname before sending a new request. Discord’s audit reason records the requesting member and source event. An AI private answer does not make the resulting server nickname private.
-
-Hujan needs View Channel, Send Messages, Read Message History, Attach Files and Embed Links for the full chat experience; Connect and Speak for ambience. Enable **Message Content Intent on Hujan’s Bot page** in Discord Developer Portal to read selected ordinary messages through REST. The gateway deliberately subscribes only to Guilds, GuildMessages and GuildVoiceStates; bot mentions arrive through Discord’s mention exception. No channel-history sweep is performed. Voice recording occurs only after the explicit voice-summary setup and participant consent above.
-
-## Access, personality and context
-
-AI settings preserve server access, configured AI guild/channel/role restrictions, **gpt-6-luna / reasoning high** and context-first optional web search.
-
-### Personality
-
-Choose the bot's personality in the dashboard under **Settings → Personality**. Built-in templates are Casual Malay (default), Friendly assistant, Professional and concise, Witty and playful, and Sabah Malay roast (marked mature, so check it suits your community). You can also paste or write any text of your own, up to 8,000 characters.
-
-Saving applies from the next reply with no restart. The chosen text is written to `PERSONALITY.md` in the state folder, which you can still edit by hand; the dashboard detects a hand edit, shows it as Custom, and keeps your own text when you switch templates. Templates live in `assets/personalities/` and the dashboard never modifies them. Concurrent saves use a revision check, so a stale browser tab cannot silently overwrite a newer choice. Editing the original project's personality does not update this copy.
-
-Only the server owner, members with Administrator/Manage Server, or `CONTROLLER_ROLE_IDS` can change sleep sessions. Ordinary members may use permitted AI commands and view sleep status. AI output cannot execute voice controls: members use the deterministic `/sleep` commands themselves.
-
-History is isolated by guild, channel, requesting member and public/private visibility. Context includes that member’s earlier Hujan questions/answers and an explicitly selected same-channel reply chain; it does not ingest their ordinary channel messages. A direct attachment takes priority over a referenced image. Another member’s referenced image is analyzed but is not reposted. Image bytes and download URLs are not retained in history. Public output and supplied context are sent to the existing connected AI account; everyone shares its allowance.
-
-Web search is optional: Hujan uses supplied text, images, references and history first, then searches when missing public facts are needed. Having context does not prohibit searching; having no context does not force it. The existing OAuth subscription adapter is preserved, with no paid API-key fallback.
-
-## Architecture and failure behavior
-
-```mermaid
-flowchart LR
-  D[Discord members] --> F[One Discord frontend]
-  F --> S[Sleep controller and PCM playback]
-  S --> V[Discord voice]
-  F <-->|Validated local IPC| W[Supervised AI worker]
-  W --> O[Existing ChatGPT OAuth connection]
-  W --> A[AI history and event claims]
-  S --> B[Sleep session database]
-```
-
-`src/main.ts` owns all Discord events and sends each known slash command to one handler. `src/integration/sleep-handler.ts` acknowledges controls before fetching the member and enforces sleep permissions. The preserved `src/sleep/` modules implement per-guild serialized actions, reconnects, removal suspension, one voice channel per guild, rain scenes/thunder and sunny loops. Assets are local PCM; attribution is in `assets/SOURCE.md`.
-
-The worker receives bounded AI requests and selected context through advanced Node IPC serialization. Its environment excludes Discord credentials, API keys and inherited Node injection options. This is process isolation for responsiveness and accidental failure containment, **not an OS security sandbox**: both processes run as the same Windows user.
-
-The frontend formats no AI images. Worker output contains the final Discord payload, including binary attachments. The frontend delivers it once and acknowledges delivery; the worker commits history only afterward. Repeated/late results cannot send a second callback. Durable SQLite event claims prevent regeneration on Discord event replay; mention sends additionally enforce a source-message nonce. Delivery is not a distributed transaction: a crash after Discord accepts a message can lose its history turn, but the event is not automatically replayed.
-
-Worker crashes reject outstanding questions and trigger bounded backoff restarts without resetting voice/player objects. Only a lock owned by the exact exited worker is cleared automatically. Auth/foreign locks are never cleared. Failed/crashed questions must be sent again as a **new** Discord message/interaction. The frontend can continue sleep controls while AI is starting, unavailable or usage-limited. A frontend or host crash still interrupts voice until restart; the child does not make voice independently resilient to a host outage.
-
-AI limits remain: one active generation, four active/queued conversations, five-second per-member cooldown, two-minute active request deadline, 4,000-character prompt, 12,000-character output, one image up to 14 MiB and bounded raster decoding. Local conversations expire after 24 hours and retain at most ten whole turns/24,000 characters. Image previews are capped at 8 MiB and respect the upload limit supplied for slash interactions. IPC adds bounded reference/delivery waits and a total queue/request watchdog.
-
-## Storage and ownership
-
-| Location | Purpose |
+| Doc | Contents |
 | --- | --- |
-| `.env` | Sleep bot token/identity, AI restrictions/model, controller/audio settings |
-| `data/dashboard/settings.json`, `settings.previous.json` | Current and previous managed settings manifests; no plaintext secrets |
-| `data/dashboard/secrets-<revision>.dpapi` | Versioned encrypted Discord/API credentials referenced by a settings manifest |
-| `data/dashboard/control.dpapi`, `runtime.json`, `supervisor.json` | Protected local-control credential and verified runtime/launch identities |
-| `data/frontend/<application-id>/runtime.lock` | Exclusive Discord frontend owner |
-| `data/frontend/<application-id>/nickname-events.sqlite` | Durable nickname action event claims; reset does not erase them |
-| `data/ai/runtime.lock` | AI worker or auth command owner |
-| `data/ai/chatgpt.dpapi`, `host-id` | Existing encrypted authorization and host binding |
-| `data/ai/conversations.sqlite` | Scoped text history and durable event claims |
-| `data/sleep/sessions.sqlite` | Voice session/channel/mode/style/persistence |
-| `data/backups/` | Command manifests and consistent pre-cutover database/credential snapshots |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Start/stop, dashboard, self-hosting, settings recovery, storage, maintenance, rollback |
+| [docs/DISCORD_USAGE.md](docs/DISCORD_USAGE.md) | Commands, nicknames, access rules, personality, context |
+| [docs/VOICE_SUMMARIES.md](docs/VOICE_SUMMARIES.md) | Consent flow, local Whisper setup, limits, Malay WER/CER evaluation |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, worker IPC, failure behavior |
+| [WINDOWS_APP.md](WINDOWS_APP.md) | Installer, import, build and recovery |
+| [PROJECT_STATE.md](PROJECT_STATE.md) | Deployment snapshot, caveats, pilot checklist |
+| [DESIGN.md](DESIGN.md) | Dashboard design notes |
 
-The `.env`, data, logs and node_modules are ignored. History databases are unencrypted local files; DPAPI protects credentials only. Preserve this Windows account and protect local access. Never publish `.env`, data or a whole runtime folder.
-
-Before deleting a stale lock, inspect **unrestricted** Windows processes and their working directories. Sandboxed inspection previously missed active bots and led to duplicate handlers. `scripts/process-directory.ps1 -ProcessIds <pid>` reads only the directory metadata of an identified 64-bit process; it does not print environment variables. Verify the PID and exact project/entry point again before stopping it.
-
-## Maintenance and verification
+## Development
 
 ```powershell
-npm run check
-npm test
-npm run register
+npm run check   # TypeScript
+npm test        # automated tests
 ```
 
-Registration upserts these seven commands in the configured AI guild individually; it preserves unrelated commands and existing global scopes. Do not run the original projects’ bulk command registrars against the combined application.
-
-Stop the combined runtime before `npm run auth -- status`, `models`, `login`, `test` or `logout`. These share the AI lock. Reauthorization is necessary only if the current grant cannot refresh. A live auth test consumes the connected plan allowance; normal tests use fixtures/stubs and do not contact Discord or perform live inference.
-
-The migration utility uses SQLite’s backup API, verifies `PRAGMA quick_check`, preserves sources, and refuses to overwrite targets. `scripts/state-transfer.ts --rehearsal` exercises copies. Actual migration requires both original runtimes to be verified stopped and `--originals-stopped`; the source AI lock must already be absent. This utility does not stop processes or delete locks.
-
-See `PROJECT_STATE.md` for the deployment snapshot, test count, current caveats and pilot checklist. Automated audio tests verify frames/loops and controller/state behavior. Human listening while overlapping text/image requests remains necessary before relying on unattended overnight playback.
-
-## Rollback
-
-1. Verify and stop the combined frontend and worker. Confirm both PIDs are gone before touching locks. Preserve a consistent backup of the **current** combined databases and encrypted credential blob first.
-2. Copy the newest `data/ai/chatgpt.dpapi` and `host-id` back to the original assistant project's `data/` under the same Windows account. OAuth refresh rotation may make the pre-cutover original credential stale. Do not decrypt or paste it. To retain post-cutover chats/sleep changes, use a consistent SQLite backup to the original state paths while all consumers are stopped; otherwise explicitly choose the pre-cutover snapshots and accept losing newer state.
-3. Restore the recorded pre-cutover guild commands. The exact snapshot path is recorded as `preCutoverCommandBackup` in `data/deployment.json`. Preview with `node --env-file=.env --import tsx scripts/restore-commands.ts <snapshot-path>`, then add `--apply` during rollback. It upserts saved definitions and removes only the newly added AI command names absent from that snapshot, preserving unrelated commands/global scopes. The original assistant application’s commands were never modified.
-4. Start one original sleep instance from `E:\Projects\2026Projject\DiscordSleepBot` and one original assistant bot from its original folder. Verify their working directories, Discord identities and ownership. Do not start the combined runtime alongside them.
-
-Neither original project’s application code is modified by this integration. Runtime snapshots and encrypted copied grants are private and should not be redistributed.
+Never commit `.env`, `data/` or any credentials. Asset attribution is in [assets/SOURCE.md](assets/SOURCE.md).
